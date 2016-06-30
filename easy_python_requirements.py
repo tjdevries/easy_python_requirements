@@ -122,3 +122,31 @@ def parse_doc(docstring: str):
     info_dict = info_line_status(doclist, requirement_info)
 
     return [requirement_description, info_dict]
+
+
+def parse_func(f):
+    """
+    Parse the function given
+
+    Args:
+        f (function): The test function to be parsed
+
+    Returns:
+        undecided
+    """
+    docstring = f.__doc__
+
+    return parse_doc(docstring)
+
+
+def update_func(f):
+    """
+    Update the info for a function
+
+    Args:
+        f (function): The function to update
+
+    Returns:
+        None
+    """
+    pass
