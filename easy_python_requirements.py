@@ -59,9 +59,13 @@ def info_line_status(doclist, info_index):
         dict: Information dictionary, specifying important info
     """
     info_dict = {}
+
+    # If the test info line contains just a place holder
     if doclist[info_index] == config['requirement_info']:
         info_dict['requires_update'] = True
     else:
+        # Proper info is automatically recorded in JSON,
+        #   so if it doesn't properly load into JSON then it's wrong
         try:
             info_json = json.loads(doclist[info_index].split(config['requirement_info'])[1])
 
@@ -71,6 +75,12 @@ def info_line_status(doclist, info_index):
                 info_dict['requires_update'] = True
         except ValueError:
             info_dict['requires_update'] = True
+
+    # Get info if it doesn't need to be updated
+    if info_dict['requires_update'] is False:
+        info_dict['info'] = {}
+        for key in info_json.keys():
+            info_dict['info'][key] = info_json[key]
 
     return info_dict
 
