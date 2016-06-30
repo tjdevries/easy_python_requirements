@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import os
 import json
+from datetime import datetime
 
 
 config = {
@@ -10,6 +12,8 @@ config = {
     'requirement_info': 'TEST INFO:',
     'info_format': ['test_id', 'time_stamp'],
 }
+
+highest_id = 0
 
 
 def trim(docstring):
@@ -45,6 +49,17 @@ def index_containing_substring(search_list, substring):
             return index
 
     raise ValueError(search_list.index(substring))
+
+
+def create_json_info():
+    global highest_id
+
+    test_id = highest_id
+    highest_id += 1
+
+    time_stamp = str(datetime.today().isoformat())
+
+    return json.dumps({'test_id': test_id, 'time_stamp': time_stamp})
 
 
 def info_line_status(doclist, info_index):
@@ -139,6 +154,12 @@ def parse_func(f):
     return parse_doc(docstring)
 
 
+def module_to_filename(name):
+    name = name.replace('.', os.sep)
+
+    return name + '.py'
+
+
 def update_func(f):
     """
     Update the info for a function
@@ -149,4 +170,17 @@ def update_func(f):
     Returns:
         None
     """
-    pass
+    print()
+    print(f.__module__)
+    filename = module_to_filename(f.__module__)
+    with open(filename, 'r+') as location:
+        for index, line in enumerate(location):
+            if 'TEST INFO' in line:
+                index_to_write = index
+                break
+
+    with open(filename, 'r') as location:
+        for line in location:
+            print(line, end='')
+
+    print(f.__qualname__)
