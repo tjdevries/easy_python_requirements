@@ -52,7 +52,7 @@ class TestParseDoc:
 
         docstring = """
         This one has valid info
-        TEST INFO: {"test_id": 6}
+        TEST INFO: {"test_id": 6, "time_stamp": "2016-06-30T13:51:04.061138"}
         TEST DESCRIPTION BEGIN
         This is good
         TEST DESCRIPTION END
