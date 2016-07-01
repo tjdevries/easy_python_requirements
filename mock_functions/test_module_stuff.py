@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 
-class FirstModule:
+class FirstClass:
     def function_that_should_not_change(self):
         """
-        TEST INFO: {"time_stamp": "2016-07-01T10:45:56.539011", "test_id": 2}
+        TEST INFO: {"time_stamp": "2016-07-01T10:45:56.539011", "test_id": 5}
         TEST DESCRIPTION BEGIN
         This should never be touched
         TEST DESCRIPTION END
@@ -14,7 +14,7 @@ class FirstModule:
         pass
 
 
-class SecondModule:
+class SecondClass:
     """
     TEST INFO:
     TEST DESCRIPTION BEGIN
@@ -31,7 +31,7 @@ class SecondModule:
         pass
 
 
-class ThirdModule:
+class ThirdClass:
     def this_should_be_ignored(self):
         """
         TEST INFO: {"time_stamp": "2016-07-01T10:45:56.539011", "test_id": 1}

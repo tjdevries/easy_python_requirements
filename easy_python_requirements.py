@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import os
 import json
+import inspect
+import pkgutil
+import importlib
 from datetime import datetime
 
 
@@ -60,6 +62,28 @@ def create_json_info():
     time_stamp = str(datetime.today().isoformat())
 
     return json.dumps({'test_id': test_id, 'time_stamp': time_stamp})
+
+
+def append_json_info(filename, index, value, previous_info=None):
+    """
+    Append the json info to the correct line in the file.
+
+    Args:
+        index (int): The line number to append to.
+        value (str): The item to append to the line
+        previous_info (dict): The previous info in the dictionary
+            TODO: Use this
+
+    Returns:
+        None
+    """
+    with open(filename, "r") as f:
+        contents = f.readlines()
+
+    contents[index] = contents[index].replace('\n', '') + ' ' + value + '\n'
+
+    with open(filename, "w") as f:
+        f.writelines(contents)
 
 
 def info_line_status(doclist, info_index):
@@ -154,12 +178,6 @@ def parse_func(f):
     return parse_doc(docstring)
 
 
-def module_to_filename(name):
-    name = name.replace('.', os.sep)
-
-    return name + '.py'
-
-
 def update_func(f):
     """
     Update the info for a function
@@ -170,17 +188,105 @@ def update_func(f):
     Returns:
         None
     """
-    print()
-    print(f.__module__)
-    filename = module_to_filename(f.__module__)
+    desc, info_status = parse_doc(f.__doc__)
+
+    if not info_status['requires_update']:
+        return
+
+    filename = inspect.getfile(f)
     with open(filename, 'r+') as location:
-        for index, line in enumerate(location):
+        for index, line in enumerate(location.readlines()):
+            # We have not reached the function yet
+            if index < f.__code__.co_firstlineno:
+                continue
+
             if 'TEST INFO' in line:
-                index_to_write = index
+                test_info_index = index
                 break
 
-    with open(filename, 'r') as location:
-        for line in location:
-            print(line, end='')
+    append_json_info(filename, test_info_index, create_json_info())
 
-    print(f.__qualname__)
+    # print()
+    # print(f.__module__)
+    # print(dir(f.__code__))
+    # print(f.__code__.co_filename)
+    # print(f.__code__.co_firstlineno)
+    # with open(filename, 'r') as this_file:
+    #     print(this_file.read())
+    # print(f.__qualname__)
+
+
+def get_functions(obj):
+    return inspect.getmembers(obj, inspect.isfunction)
+
+
+def get_classes(obj):
+    return inspect.getmembers(obj, inspect.isclass)
+
+
+def get_modules(obj):
+    return inspect.getmembers(obj, inspect.getmodule)
+
+
+def explore_file(filename):
+    loader = importlib.machinery.SourceFileLoader('', filename)
+    module = loader.load_module('')
+
+    explored = {'module': {}, 'function': {}}
+    for c_name, c_member in get_classes(module):
+        current = {}
+        for f_name, f_member in get_functions(c_member):
+            current[f_name] = f_member
+
+        explored['module'][c_name] = current
+
+    for f_name, f_member in get_functions(module):
+        explored['function'][f_name] = f_member
+
+    return explored
+
+
+def update_file(filename):
+    """
+    Get, parse and update the file with the correct info
+    """
+    # prefix = '.'.join(filename.split('/')[:-1])
+    # name = filename.split('/')[-1].replace('.py', '')
+    # print(prefix, name)
+
+    explored = explore_file(filename)
+
+    import pprint
+    pprint.pprint(explored)
+
+    for c_name, c_value in explored['module'].items():
+        print(c_name)
+        for f_name, f_value in c_value.items():
+            print(f_name)
+            # print(f_values.__doc__)
+            update_func(f_value)
+
+
+def update_folder(path):
+    for load, name, is_pkg in pkgutil.walk_packages([path]):
+        print(name)
+
+    return
+
+    """
+    for name, member in get_modules(mock_functions):
+        print(name)
+        mod = getattr(mock_functions, name)
+        # Get all the classes
+        for c_name, member in get_classes(mod):
+            print('\t', c_name)
+            c_class = getattr(mod, c_name)
+            for f_name, f_member in get_functions(c_class):
+                print('\t\t', f_name)
+
+        for f_name, member in get_functions(mod):
+            print('\t', f_name)
+
+    if False:
+        importlib.find_spec("", filename)
+    """
