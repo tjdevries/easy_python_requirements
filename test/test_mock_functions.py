@@ -2,15 +2,15 @@
 # -*- coding: utf-8 -*-
 
 from shutil import copyfile
-from os import remove
+from os import remove, sep
 
-from easy_python_requirements import parse_func, update_func, update_file
+from easy_python_requirements import parse_func, update_func, update_file, read_json_info
 
 
 class FileCleaner:
-    def __init__(self, filename, temp_file='._tmp'):
+    def __init__(self, filename: str, temp_prefix='._tmp'):
         self.filename = filename
-        self.temp_file = temp_file
+        self.temp_file = temp_prefix + filename.replace(sep, '')
 
     def __enter__(self):
         copyfile(self.filename, self.temp_file)
@@ -101,5 +101,12 @@ def test_mock_module_with_two_updates():
             update_file(f)
 
         for f in files_to_check:
+            index = 0
             with open(f, 'r') as reader:
-                print(reader.read())
+                for line in reader.readlines():
+                    print(line, end='')
+                    if index == 18:
+                        json_info = read_json_info(line)
+                        assert(json_info['test_id'] == 6)
+
+                    index += 1

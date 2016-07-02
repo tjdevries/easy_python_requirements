@@ -21,6 +21,7 @@ class SecondClass:
     This class shall demonstrate changing its functions!
     TEST DESCRIPTION END
     """
+
     def this_doc_string_should_change(self):
         """
         TEST INFO:

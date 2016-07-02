@@ -18,6 +18,7 @@ config = {
 highest_id = 0
 
 
+# {{{ Utility Functions
 def trim(docstring):
     """ From PEP """
     if not docstring:
@@ -53,15 +54,64 @@ def index_containing_substring(search_list, substring):
     raise ValueError(search_list.index(substring))
 
 
+def get_functions(obj):
+    return inspect.getmembers(obj, inspect.isfunction)
+
+
+def get_classes(obj):
+    return inspect.getmembers(obj, inspect.isclass)
+
+
+def get_modules(obj):
+    return inspect.getmembers(obj, inspect.getmodule)
+
+
+def get_source_lines(lines: list, obj) -> int:
+    """
+    Get the line number where the object definition occurs
+
+    Args:
+        lines (list): The lines of the file
+        obj: An obect (either a class or function) to get the line number
+
+    Returns:
+        (int, int): The line number where the definition first occurs, and the last line of source
+    """
+    source_lines = inspect.getsourcelines(obj)[0]
+    source_length = len(source_lines)
+
+    for index in range(len(lines) - source_length):
+        if source_lines == lines[index:index + source_length]:
+            return index, index + source_length
+
+    return None, None
+
+
+# }}}
+# {{{ TEST INFO functions
 def create_json_info():
     global highest_id
 
-    test_id = highest_id
     highest_id += 1
+    test_id = highest_id
 
     time_stamp = str(datetime.today().isoformat())
 
     return json.dumps({'test_id': test_id, 'time_stamp': time_stamp})
+
+
+def read_json_info(test_info_line: str):
+    """
+    Essentially the reverse of create_json_info.
+    Gets the json info from a line.
+
+    Args:
+        test_info_line (str): The line containing the json info
+
+    Returns:
+        dict: JSON info dictionary
+    """
+    return json.loads(':'.join(test_info_line.split(':')[1:]))
 
 
 def append_json_info(filename, index, value, previous_info=None):
@@ -97,6 +147,7 @@ def info_line_status(doclist, info_index):
     Returns:
         dict: Information dictionary, specifying important info
     """
+    global highest_id
     info_dict = {}
 
     # If the test info line contains just a place holder
@@ -121,9 +172,15 @@ def info_line_status(doclist, info_index):
         for key in info_json.keys():
             info_dict['info'][key] = info_json[key]
 
+        # Any specific cleanup required
+        print(info_dict)
+        highest_id = max(info_dict['info']['test_id'], highest_id)
+
     return info_dict
 
 
+# }}}
+# {{{ Parsing Functions
 def parse_doc(docstring: str):
     """
     Parse the requirement and information from a docstring
@@ -178,6 +235,8 @@ def parse_func(f):
     return parse_doc(docstring)
 
 
+# }}}
+# {{{ Updating Functions
 def update_func(f):
     """
     Update the info for a function
@@ -186,12 +245,13 @@ def update_func(f):
         f (function): The function to update
 
     Returns:
-        None
+        dict: function information
+            test_id: id of the function encountered
     """
     desc, info_status = parse_doc(f.__doc__)
 
     if not info_status['requires_update']:
-        return
+        return info_status
 
     filename = inspect.getfile(f)
     with open(filename, 'r+') as location:
@@ -204,7 +264,10 @@ def update_func(f):
                 test_info_index = index
                 break
 
-    append_json_info(filename, test_info_index, create_json_info())
+    new_json = create_json_info()
+    append_json_info(filename, test_info_index, new_json)
+
+    return new_json
 
     # print()
     # print(f.__module__)
@@ -216,34 +279,36 @@ def update_func(f):
     # print(f.__qualname__)
 
 
-def get_functions(obj):
-    return inspect.getmembers(obj, inspect.isfunction)
+def update_class(cls):
+    """
+    Update the info for a class
 
+    Returns:
+        None
+    """
+    desc, info_status = parse_doc(cls.__doc__)
 
-def get_classes(obj):
-    return inspect.getmembers(obj, inspect.isclass)
+    if not info_status['requires_update']:
+        return
 
+    filename = inspect.getfile(cls)
 
-def get_modules(obj):
-    return inspect.getmembers(obj, inspect.getmodule)
+    with open(filename, 'r+') as location:
+        lines = location.readlines()
 
+    first_line, last_line = get_source_lines(lines, cls)
 
-def explore_file(filename):
-    loader = importlib.machinery.SourceFileLoader('', filename)
-    module = loader.load_module('')
+    with open(filename, 'r+') as location:
+        for index, line in enumerate(location.readlines()):
+            # We have not reached the function yet
+            if index < first_line or index > last_line:
+                continue
 
-    explored = {'module': {}, 'function': {}}
-    for c_name, c_member in get_classes(module):
-        current = {}
-        for f_name, f_member in get_functions(c_member):
-            current[f_name] = f_member
+            if config['requirement_info'] in line:
+                test_info_index = index
+                break
 
-        explored['module'][c_name] = current
-
-    for f_name, f_member in get_functions(module):
-        explored['function'][f_name] = f_member
-
-    return explored
+    append_json_info(filename, test_info_index, create_json_info())
 
 
 def update_file(filename):
@@ -256,14 +321,12 @@ def update_file(filename):
 
     explored = explore_file(filename)
 
-    import pprint
-    pprint.pprint(explored)
+    # import pprint
+    # pprint.pprint(explored)
 
     for c_name, c_value in explored['module'].items():
-        print(c_name)
+        update_class(c_name)
         for f_name, f_value in c_value.items():
-            print(f_name)
-            # print(f_values.__doc__)
             update_func(f_value)
 
 
@@ -290,3 +353,30 @@ def update_folder(path):
     if False:
         importlib.find_spec("", filename)
     """
+
+
+# }}}
+# {{{ Exploring Functions
+def explore_file(filename):
+    loader = importlib.machinery.SourceFileLoader('', filename)
+    module = loader.load_module('')
+
+    explored = {'module': {}, 'function': {}}
+    for c_name, c_member in get_classes(module):
+        current = {}
+        parse_doc(c_member.__doc__)
+        for f_name, f_member in get_functions(c_member):
+            current[f_name] = f_member
+            parse_doc(f_member.__doc__)
+
+        explored['module'][c_member] = current
+
+    for f_name, f_member in get_functions(module):
+        explored['function'][f_name] = f_member
+
+    return explored
+
+
+def explore_folder(foldername):
+    pass
+# }}}
