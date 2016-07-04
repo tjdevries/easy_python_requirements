@@ -2,9 +2,11 @@
 # -*- coding: utf-8 -*-
 
 from shutil import copyfile
-from os import remove, sep
+from os import remove, sep, walk
+import pathlib
+import pytest
 
-from easy_python_requirements import parse_func, update_func, update_file, read_json_info
+from easy_python_requirements import parse_func, update_func, update_file, update_folder, read_json_info
 
 
 class FileCleaner:
@@ -18,6 +20,23 @@ class FileCleaner:
     def __exit__(self, type, value, traceback):
         copyfile(self.temp_file, self.filename)
         remove(self.temp_file)
+
+
+class ListFileCleaner:
+    def __init__(self, filenames: list, temp_prefix='._tmp'):
+        self.filenames = filenames
+
+        self.filecleaners = []
+        for filename in self.filenames:
+            self.filecleaners.append(FileCleaner(filename))
+
+    def __enter__(self):
+        for filecleaner in self.filecleaners:
+            filecleaner.__enter__()
+
+    def __exit__(self, type, value, traceback):
+        for filecleaner in self.filecleaners:
+            filecleaner.__exit__(type, value, traceback)
 
 
 def test_mock_test_example_1():
@@ -68,24 +87,25 @@ def test_mock_function_in_module_1():
 
 def test_mock_function_with_multiple_modules():
     with FileCleaner('./mock_functions/test_example_3.py'):
-        from mock_functions.test_example_3 import SecondClass
+        from mock_functions.test_example_3 import SecondClassExample
 
-        desc, requirement_info = parse_func(SecondClass.this_doc_string_should_change)
+        desc, requirement_info = parse_func(SecondClassExample.this_doc_string_should_change)
 
         assert(desc == 'This is the only info that should be read or changed')
         assert(requirement_info['requires_update'] is True)
 
-        update_func(SecondClass.this_doc_string_should_change)
+        update_func(SecondClassExample.this_doc_string_should_change)
 
         with open('./mock_functions/test_example_3.py') as f:
             f_list = f.read().split('\n')
 
-        for line in f_list[SecondClass.this_doc_string_should_change.__code__.co_firstlineno:]:
+        for line in f_list[SecondClassExample.this_doc_string_should_change.__code__.co_firstlineno:]:
             if 'TEST INFO' in line:
                 assert('test_id' in line)
                 break
 
 
+@pytest.mark.skip(reason='woot')
 def test_mock_module_with_two_updates():
     """
     This test should demonstrate adding two INFOs, one to the class and one to its function.
@@ -104,9 +124,35 @@ def test_mock_module_with_two_updates():
             index = 0
             with open(f, 'r') as reader:
                 for line in reader.readlines():
-                    print(line, end='')
                     if index == 18:
                         json_info = read_json_info(line)
                         assert(json_info['test_id'] == 6)
 
                     index += 1
+
+
+def test_mock_folder_update():
+    """
+    This test will take a directory and update all of the files there.
+    Folder update does not check recursively if False is set.
+    """
+    effected_files = []
+    for path, subdirs, files in walk('./mock_functions/'):
+        for name in files:
+            if '__' in name:
+                continue
+            if 'pyc' in name:
+                continue
+            effected_files.append(str(pathlib.PurePath(path, name)))
+
+    print(effected_files)
+    with ListFileCleaner(effected_files):
+        folder_to_check = './mock_functions/'
+
+        update_folder(folder_to_check, False)
+
+        for f in effected_files:
+            with open(f, 'r') as reader:
+                for line in reader.readlines():
+                    if 'TEST INFO' in line:
+                        print(f, line)

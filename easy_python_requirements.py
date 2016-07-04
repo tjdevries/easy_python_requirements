@@ -5,8 +5,15 @@ import json
 import inspect
 import pkgutil
 import importlib
+import os
+import logging
+import sys
 from datetime import datetime
 
+
+logging.basicConfig(stream=sys.stdout)
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
 
 config = {
     'requirement_begin': 'TEST DESCRIPTION BEGIN',
@@ -173,7 +180,7 @@ def info_line_status(doclist, info_index):
             info_dict['info'][key] = info_json[key]
 
         # Any specific cleanup required
-        print(info_dict)
+        # print(info_dict)
         highest_id = max(info_dict['info']['test_id'], highest_id)
 
     return info_dict
@@ -269,15 +276,6 @@ def update_func(f):
 
     return new_json
 
-    # print()
-    # print(f.__module__)
-    # print(dir(f.__code__))
-    # print(f.__code__.co_filename)
-    # print(f.__code__.co_firstlineno)
-    # with open(filename, 'r') as this_file:
-    #     print(this_file.read())
-    # print(f.__qualname__)
-
 
 def update_class(cls):
     """
@@ -315,51 +313,37 @@ def update_file(filename):
     """
     Get, parse and update the file with the correct info
     """
-    # prefix = '.'.join(filename.split('/')[:-1])
-    # name = filename.split('/')[-1].replace('.py', '')
-    # print(prefix, name)
-
+    explored = {}
     explored = explore_file(filename)
-
-    # import pprint
-    # pprint.pprint(explored)
 
     for c_name, c_value in explored['module'].items():
         update_class(c_name)
         for f_name, f_value in c_value.items():
             update_func(f_value)
 
+    for f_name, f_value in explored['function'].items():
+        update_func(f_value)
 
-def update_folder(path):
-    for load, name, is_pkg in pkgutil.walk_packages([path]):
-        print(name)
+
+def update_folder(path, recursive=True):
+    explored = explore_folder(path, recursive)
+    # pprint(explored)
+
+    for name in explored.keys():
+        update_file(name)
 
     return
-
-    """
-    for name, member in get_modules(mock_functions):
-        print(name)
-        mod = getattr(mock_functions, name)
-        # Get all the classes
-        for c_name, member in get_classes(mod):
-            print('\t', c_name)
-            c_class = getattr(mod, c_name)
-            for f_name, f_member in get_functions(c_class):
-                print('\t\t', f_name)
-
-        for f_name, member in get_functions(mod):
-            print('\t', f_name)
-
-    if False:
-        importlib.find_spec("", filename)
-    """
 
 
 # }}}
 # {{{ Exploring Functions
 def explore_file(filename):
-    loader = importlib.machinery.SourceFileLoader('', filename)
-    module = loader.load_module('')
+    # loader = importlib.machinery.SourceFileLoader('', filename)
+    # module = loader.load_module('')
+    if filename[0:2] == './':
+        filename = filename[2:]
+
+    module = importlib.import_module(filename.replace(os.sep, '.')[:-3])
 
     explored = {'module': {}, 'function': {}}
     for c_name, c_member in get_classes(module):
@@ -377,6 +361,23 @@ def explore_file(filename):
     return explored
 
 
-def explore_folder(foldername):
-    pass
+def explore_folder(foldername, recursive=True):
+    files_to_load = []
+    explored = {}
+
+    for load, name, is_pkg in pkgutil.walk_packages([foldername]):
+        # if not recursive and is_pkg:
+        #     continue
+        if is_pkg:
+            path = load.path + name + os.sep
+            logger.debug(path)
+            explored.update(explore_folder(path))
+        else:
+            files_to_load.append(load.path + name + '.py')
+
+    for f in files_to_load:
+        logger.info('File: {0}'.format(f))
+        explored[f] = explore_file(f)
+
+    return explored
 # }}}
