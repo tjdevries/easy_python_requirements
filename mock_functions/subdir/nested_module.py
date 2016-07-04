@@ -4,4 +4,10 @@
 
 class nestedClass:
     def nested_funct(self):
+        """
+        TEST INFO:
+        TEST DESCRIPTION BEGIN
+        This is a nested module
+        TEST DESCRIPTION END
+        """
         pass

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 
-class FirstClass:
+class FirstClassExample:
     def function_that_should_not_change(self):
         """
         TEST INFO:
@@ -14,7 +14,7 @@ class FirstClass:
         pass
 
 
-class SecondClass:
+class SecondClassExample:
     """
     TEST INFO:
     TEST DESCRIPTION BEGIN
@@ -31,7 +31,7 @@ class SecondClass:
         pass
 
 
-class ThirdClass:
+class ThirdClassExample:
     def this_should_be_ignored(self):
         """
         TEST INFO:
