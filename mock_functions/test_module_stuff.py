@@ -3,6 +3,15 @@
 
 
 class FirstClass:
+    """
+    TEST INFO: {"time_stamp": "2016-07-02T10:45:57.539011", "test_id": 4}
+    TEST DESCRIPTION BEGIN
+    This is a class description
+    It is multiple lines
+    It should all be nicely formatted
+    TEST DESCRIPTION END
+    Doesn't really matter
+    """
     def function_that_should_not_change(self):
         """
         TEST INFO: {"time_stamp": "2016-07-01T10:45:56.539011", "test_id": 5}

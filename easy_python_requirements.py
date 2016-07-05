@@ -9,6 +9,7 @@ import os
 import logging
 import sys
 from datetime import datetime
+from pathlib import PurePath
 
 
 logging.basicConfig(stream=sys.stdout)
@@ -51,6 +52,21 @@ def trim(docstring):
         trimmed.pop(0)
     # Return a single string:
     return '\n'.join(trimmed)
+
+
+def indent_string(string):
+    if string is None:
+        return ''
+    output = '\n'.join(['    ' + line for line in string.split('\n')])
+    if output[:-2] != '\n':
+        output += '\n'
+
+    return output
+
+
+def get_relative_path(obj):
+    file_path = PurePath(inspect.getfile(obj))
+    return str(file_path.relative_to(os.getcwd()))
 
 
 def index_containing_substring(search_list, substring):
@@ -380,4 +396,54 @@ def explore_folder(foldername, recursive=True):
         explored[f] = explore_file(f)
 
     return explored
+
+
+# }}}
+# {{{ Reporting Functions
+def report_object(obj):
+    # TODO: Different actions for classes vs. functions
+    output = ''
+
+    definition_source = inspect.getsourcelines(obj)
+    output += '{0} -- Function defined at line `{1}`\n'.format(get_relative_path(obj), definition_source[1])
+    desc, requirement_info = parse_func(obj)
+
+    desc_output = indent_string(desc)
+    output += 'Description of `{0}`:\n'.format(obj.__name__)
+    output += desc_output
+
+    return output
+
+
+def report_file(filename):
+    explored = explore_file(filename)
+    print(explored)
+
+    output = ''
+    for c_value, c_functions in explored['module'].items():
+        desc, info_status = parse_doc(c_value.__doc__)
+
+        output += 'Class: {0}, defined at line `{1}` in {2}\n'.format(c_value.__name__,
+                                                                      inspect.getsourcelines(c_value)[1],
+                                                                      get_relative_path(c_value))
+        output += indent_string(desc)
+        for f_name, f_value in c_functions.items():
+            output += '\n' + indent_string(report_object(f_value))
+
+    for f_name, f_value in explored['function'].items():
+        print(f_value)
+
+    return output
+
+
+def report_folder(path):
+    explored = explore_folder(path)
+
+    output = ''
+    for file_name, file_dict in explored.items():
+        output += report_file(file_name)
+
+    return output
+
+
 # }}}
