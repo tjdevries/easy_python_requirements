@@ -16,7 +16,7 @@ from pathlib import PurePath
 
 logging.basicConfig(stream=sys.stdout)
 logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 config = {
     'requirement_begin': 'TEST DESCRIPTION BEGIN',
@@ -372,12 +372,11 @@ def update_folder(path, recursive=True):
 def explore_file(filename):
     # loader = importlib.machinery.SourceFileLoader('', filename)
     # module = loader.load_module('')
-    if filename[0:2] == './':
+    if filename[0:2] == './' or filename[0:2] == '.\\':
         filename = filename[2:]
 
     mod_name = filename.replace('/', '.').replace('\\', '.')[:-3]
-    logger.info('Importing filename {0} from filename {1}'.format(mod_name,
-                                                                  filename))
+    logger.debug('Importing filename {0} from filename {1} with cwd: {2}'.format(mod_name, filename, os.getcwd()))
 
     module = importlib.import_module(mod_name)
     print('Trying to reload ' + str(module))
@@ -403,6 +402,7 @@ def explore_folder(foldername, recursive=True):
     files_to_load = []
     explored = OrderedDict()
 
+    logger.debug('Exploring folder {0} from folder {1}'.format(foldername, os.getcwd()))
     for load, name, is_pkg in pkgutil.walk_packages([foldername]):
         # if not recursive and is_pkg:
         #     continue
@@ -501,6 +501,7 @@ def create_report(path):
     Returns:
         str: The report, nicely formatted and full of happiness
     """
+    logger.info('Reporting on path: {0}'.format(path))
     report = report_folder(path)
 
     processed = ''
@@ -563,6 +564,7 @@ def otherstuff():
 
 # }}}
 if __name__ == "__main__":
+    logger.debug('Appending `{0}` to sys.path'.format(os.getcwd()))
     sys.path.append(os.getcwd())
 
     parser = argparse.ArgumentParser(description='Update and report on test requirements')
