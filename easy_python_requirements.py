@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import argparse
 import json
 import inspect
 import pkgutil
@@ -14,7 +15,7 @@ from pathlib import PurePath
 
 logging.basicConfig(stream=sys.stdout)
 logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.WARN)
 
 config = {
     'requirement_begin': 'TEST DESCRIPTION BEGIN',
@@ -417,7 +418,6 @@ def report_object(obj):
 
 def report_file(filename):
     explored = explore_file(filename)
-    print(explored)
 
     output = ''
     for c_value, c_functions in explored['module'].items():
@@ -431,7 +431,7 @@ def report_file(filename):
             output += '\n' + indent_string(report_object(f_value))
 
     for f_name, f_value in explored['function'].items():
-        print(f_value)
+        output += report_object(f_value)
 
     return output
 
@@ -441,9 +441,21 @@ def report_folder(path):
 
     output = ''
     for file_name, file_dict in explored.items():
-        output += report_file(file_name)
+        output += 'File: {0}\n'.format(file_name)
+        output += indent_string(report_file(file_name))
 
     return output
 
 
 # }}}
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Update and report on test requirements')
+    parser.add_argument('folder_name', type=str,
+                        help='The folder name to run the operation on')
+    parser.add_argument('mode', choices=['u', 'r', 'a'],
+                        help='Choose what mode to run in.\n`u`: update\n`r`: report\n`a`: all')
+
+    args = parser.parse_args()
+
+    if args.mode == 'r':
+        print(report_folder(args.folder_name))
