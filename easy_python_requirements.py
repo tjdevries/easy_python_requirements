@@ -375,10 +375,11 @@ def explore_file(filename):
     if filename[0:2] == './':
         filename = filename[2:]
 
-    logger.info('Importing filename {0} from filename {1}'.format(filename.replace(os.sep, '.')[:-3],
+    mod_name = filename.replace('/', '.').replace('\\', '.')[:-3]
+    logger.info('Importing filename {0} from filename {1}'.format(mod_name,
                                                                   filename))
 
-    module = importlib.import_module(filename.replace(os.sep, '.')[:-3])
+    module = importlib.import_module(mod_name)
     print('Trying to reload ' + str(module))
     module = importlib.reload(module)
 
