@@ -68,7 +68,10 @@ def indent_string(string, level=1):
 
 def get_relative_path(obj):
     file_path = PurePath(inspect.getfile(obj))
-    return str(file_path.relative_to(os.getcwd()))
+    try:
+        return str(file_path.relative_to(os.getcwd()))
+    except ValueError:
+        return str(file_path)
 
 
 def index_containing_substring(search_list, substring):
@@ -379,8 +382,7 @@ def explore_file(filename):
     logger.debug('Importing filename {0} from filename {1} with cwd: {2}'.format(mod_name, filename, os.getcwd()))
 
     module = importlib.import_module(mod_name)
-    print('Trying to reload ' + str(module))
-    module = importlib.reload(module)
+    # module = importlib.reload(module)
 
     explored = {'module': OrderedDict(), 'function': OrderedDict()}
     for c_name, c_member in get_classes(module):
@@ -572,13 +574,27 @@ if __name__ == "__main__":
                         help='The folder name to run the operation on')
     parser.add_argument('mode', choices=['u', 'r', 'a'],
                         help='Choose what mode to run in.\n`u`: update\n`r`: report\n`a`: all')
+    parser.add_argument('-o', '--output', dest='output_file', default=None,
+                        help='Output file for created report')
 
     args = parser.parse_args()
 
     if args.mode == 'r':
-        print(create_report(args.folder_name))
+        report = create_report(args.folder_name)
+
+        if args.output_file:
+            with open(args.output_file, 'w+') as f:
+                f.write(report)
+        else:
+            print(report)
     elif args.mode == 'u':
         update_folder(args.folder_name)
     elif args.mode == 'a':
         update_folder(args.folder_name)
-        print(create_report(args.folder_name))
+
+        report = create_report(args.folder_name)
+        if args.output_file:
+            with open(args.output_file, 'r') as f:
+                f.write(report)
+        else:
+            print(report)
