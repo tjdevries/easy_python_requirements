@@ -85,6 +85,54 @@ def get_depth_of_file(file_name):
     return max(len(file_name.split('\\')), len(file_name.split('/')))
 
 
+def get_separator(file_name):
+    if '\\' in file_name:
+        return '\\'
+    else:
+        return '/'
+
+
+def get_sorted_file_directory_structure(file_list, previous_info=None):
+    # TODO: This is the file to handle the nicer formatting structure
+    # sorted dict
+    sd = OrderedDict()
+
+    for name in file_list:
+        sd[name] = name
+
+    return sd
+    # sd['./'] = []
+    # # print('.' + get_separator(file_list[0]))
+
+    # for name in file_list:
+    #     depth = get_depth_of_file(name) - 1
+
+    #     beginning = name.split(get_separator(name))[0]
+    #     end = get_separator(name).join(name.split(get_separator(name))[1:])
+
+    #     print(beginning, end, depth)
+
+    #     if depth > 0:
+    #         if beginning not in sd.keys():
+    #             if previous_info:
+    #                 previous_info[0][previous_info[1]][beginning] = []
+    #                 print(dict(previous_info[0].items()), previous_info[1] + '/' + beginning)
+    #             else:
+    #                 sd[beginning] = []
+
+    #         # sd[beginning].append(get_sorted_file_directory_structure([end], (sd, beginning)))
+    #         get_sorted_file_directory_structure([end], (sd, beginning))
+    #     else:
+    #         # sd['./'].append(name)
+    #         if previous_info:
+    #             print(previous_info)
+    #             previous_info[0][previous_info[1]].append(name)
+    #         else:
+    #             sd['./'].append(name)
+
+    # return sd
+
+
 def index_containing_substring(search_list, substring):
     for index, s in enumerate(search_list):
         if substring in s:
@@ -523,11 +571,29 @@ def create_report(path):
     logger.info('Reporting on path: {0}'.format(path))
     report = report_folder(path)
 
+    # TODO: Create a nicer formatting and section formatter
+    # import pprint
+    # pprint.pprint(dict(get_sorted_file_directory_structure(report.keys())))
+    # section_tracker = [-1]
+
     processed = ''
-    # section_tracker = []
     for file_name, file_dict in report.items():
         depth_of_dir = get_depth_of_file(file_name)
-        processed += '{1} File: {0}\n\n'.format(file_name, '#' * depth_of_dir)
+
+        # try:
+        #     section_tracker[depth_of_dir] += 1
+        # except IndexError:
+        #     original_len = len(section_tracker)
+        #     while len(section_tracker) < depth_of_dir:
+        #         section_tracker.append(-1)
+
+        #     for item in range(1, original_len):
+        #         section_tracker[item] += 1
+
+        # processed += '{2} | {1} File: {0}\n\n'.format(file_name,
+        #                                               '#' * (depth_of_dir),
+        #                                               '.'.join(str(index) for index in section_tracker[0:depth_of_dir]))
+        processed += '{1} File: {0}\n\n'.format(file_name, '#' * (depth_of_dir - 1))
 
         for class_name, class_dict in file_dict.items():
             # Check if we've come to the function key, which specifies functions without a class
