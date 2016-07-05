@@ -71,6 +71,7 @@ def get_relative_path(obj):
     try:
         return str(file_path.relative_to(os.getcwd()))
     except ValueError:
+        logger.warning('Could not get relative for {0} and {1}'.format(str(file_path), os.getcwd()))
         return str(file_path)
 
 
@@ -411,13 +412,19 @@ def explore_folder(foldername, recursive=True):
         if is_pkg:
             path = load.path + name + os.sep
             logger.debug(path)
-            explored.update(explore_folder(path))
+            temp_explored = explore_folder(path)
+            for key, value in temp_explored.items():
+                explored[key] = value
+                # explored.move_to_end(key)
         else:
             files_to_load.append(load.path + name + '.py')
 
     for f in files_to_load:
         logger.info('File: {0}'.format(f))
         explored[f] = explore_file(f)
+
+    # TODO: Get the order sorted by files, then directories
+    explored = OrderedDict(sorted(explored.items(), key=lambda x: len(x[0].split('/'))))
 
     return explored
 
@@ -507,6 +514,7 @@ def create_report(path):
     report = report_folder(path)
 
     processed = ''
+    # section_tracker = []
     for file_name, file_dict in report.items():
         processed += '# File: {0}\n\n'.format(file_name)
 
