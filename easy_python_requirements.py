@@ -9,13 +9,14 @@ import importlib
 import os
 import logging
 import sys
+from collections import OrderedDict
 from datetime import datetime
 from pathlib import PurePath
 
 
 logging.basicConfig(stream=sys.stdout)
 logger = logging.getLogger()
-logger.setLevel(logging.WARN)
+logger.setLevel(logging.DEBUG)
 
 config = {
     'requirement_begin': 'TEST DESCRIPTION BEGIN',
@@ -55,10 +56,10 @@ def trim(docstring):
     return '\n'.join(trimmed)
 
 
-def indent_string(string):
+def indent_string(string, level=1):
     if string is None:
         return ''
-    output = '\n'.join(['    ' + line for line in string.split('\n')])
+    output = '\n'.join(['    ' * level + line for line in string.split('\n')])
     if output[:-2] != '\n':
         output += '\n'
 
@@ -88,6 +89,15 @@ def get_classes(obj):
 
 def get_modules(obj):
     return inspect.getmembers(obj, inspect.getmodule)
+
+
+def get_type(obj):
+    if inspect.isclass(obj):
+        return 'class'
+    elif inspect.isfunction(obj):
+        return 'function'
+    else:
+        return str(type(obj))
 
 
 def get_source_lines(lines: list, obj) -> int:
@@ -138,7 +148,7 @@ def read_json_info(test_info_line: str):
     return json.loads(':'.join(test_info_line.split(':')[1:]))
 
 
-def append_json_info(filename, index, value, previous_info=None):
+def append_json_info(filename, index, value):
     """
     Append the json info to the correct line in the file.
 
@@ -154,6 +164,11 @@ def append_json_info(filename, index, value, previous_info=None):
     with open(filename, "r") as f:
         contents = f.readlines()
 
+    logger.debug('Appending {0} to line {1} of {2}'.format(
+        value,
+        index,
+        filename
+    ))
     contents[index] = contents[index].replace('\n', '') + ' ' + value + '\n'
 
     with open(filename, "w") as f:
@@ -330,7 +345,7 @@ def update_file(filename):
     """
     Get, parse and update the file with the correct info
     """
-    explored = {}
+    explored = OrderedDict()
     explored = explore_file(filename)
 
     for c_name, c_value in explored['module'].items():
@@ -360,11 +375,16 @@ def explore_file(filename):
     if filename[0:2] == './':
         filename = filename[2:]
 
-    module = importlib.import_module(filename.replace(os.sep, '.')[:-3])
+    logger.info('Importing filename {0} from filename {1}'.format(filename.replace(os.sep, '.')[:-3],
+                                                                  filename))
 
-    explored = {'module': {}, 'function': {}}
+    module = importlib.import_module(filename.replace(os.sep, '.')[:-3])
+    print('Trying to reload ' + str(module))
+    module = importlib.reload(module)
+
+    explored = {'module': OrderedDict(), 'function': OrderedDict()}
     for c_name, c_member in get_classes(module):
-        current = {}
+        current = OrderedDict()
         parse_doc(c_member.__doc__)
         for f_name, f_member in get_functions(c_member):
             current[f_name] = f_member
@@ -380,7 +400,7 @@ def explore_file(filename):
 
 def explore_folder(foldername, recursive=True):
     files_to_load = []
-    explored = {}
+    explored = OrderedDict()
 
     for load, name, is_pkg in pkgutil.walk_packages([foldername]):
         # if not recursive and is_pkg:
@@ -401,17 +421,37 @@ def explore_folder(foldername, recursive=True):
 
 # }}}
 # {{{ Reporting Functions
-def report_object(obj):
-    # TODO: Different actions for classes vs. functions
-    output = ''
+def report_object(obj: object):
+    """
+    Report an object by returning a dictionary of key features
 
-    definition_source = inspect.getsourcelines(obj)
-    output += '{0} -- Function defined at line `{1}`\n'.format(get_relative_path(obj), definition_source[1])
-    desc, requirement_info = parse_func(obj)
+    Args:
+        obj (object): Object to report on
 
-    desc_output = indent_string(desc)
-    output += 'Description of `{0}`:\n'.format(obj.__name__)
-    output += desc_output
+    Returns:
+        dic:
+        {
+            'type': The objects type (i.e., 'class', 'function')
+            'description': The description found from the doc string, or None if not applicable
+            'test_info': The info dictionary
+            'file_info': {'absolute_name', 'relative_name', 'source', 'line_number'}
+        }
+    """
+    output = {}
+
+    output['name'] = obj.__name__
+    output['type'] = get_type(obj)
+
+    output['description'], output['test_info'] = parse_func(obj)
+
+    output['file_info'] = {}
+    output['file_info']['source'] = inspect.getsourcelines(obj)[0]
+    output['file_info']['line_number'] = inspect.getsourcelines(obj)[1]
+    output['file_info']['absolute_name'] = inspect.getfile(obj)
+    output['file_info']['relative_name'] = get_relative_path(obj)
+
+    if output['type'] in ['class']:
+        output['function'] = {}
 
     return output
 
@@ -419,19 +459,23 @@ def report_object(obj):
 def report_file(filename):
     explored = explore_file(filename)
 
-    output = ''
+    output = OrderedDict()
     for c_value, c_functions in explored['module'].items():
-        desc, info_status = parse_doc(c_value.__doc__)
+        class_report = report_object(c_value)
+        output[class_report['name']] = class_report
 
-        output += 'Class: {0}, defined at line `{1}` in {2}\n'.format(c_value.__name__,
-                                                                      inspect.getsourcelines(c_value)[1],
-                                                                      get_relative_path(c_value))
-        output += indent_string(desc)
         for f_name, f_value in c_functions.items():
-            output += '\n' + indent_string(report_object(f_value))
+            object_report = report_object(f_value)
+            if object_report['description']:
+                output[class_report['name']]['function'][object_report['name']] = object_report
 
     for f_name, f_value in explored['function'].items():
-        output += report_object(f_value)
+        function_report = report_object(f_value)
+        if function_report['description']:
+            if 'function' not in output.keys():
+                output['function'] = {}
+
+            output['function'][function_report['name']] = function_report
 
     return output
 
@@ -439,16 +483,87 @@ def report_file(filename):
 def report_folder(path):
     explored = explore_folder(path)
 
-    output = ''
+    output = OrderedDict()
     for file_name, file_dict in explored.items():
-        output += 'File: {0}\n'.format(file_name)
-        output += indent_string(report_file(file_name))
+        output[file_name] = report_file(file_name)
 
     return output
 
 
+def create_report(path):
+    """
+    Create a report from a specified directory
+
+    Args:
+        path (str): The path to the folder to search through
+
+    Returns:
+        str: The report, nicely formatted and full of happiness
+    """
+    report = report_folder(path)
+
+    processed = ''
+    for file_name, file_dict in report.items():
+        processed += '# File: {0}\n\n'.format(file_name)
+
+        for class_name, class_dict in file_dict.items():
+            # Check if we've come to the function key, which specifies functions without a class
+            if class_name == 'function':
+                for function_name, function_dict in class_dict.items():
+                    if function_dict['description'] is None:
+                        continue
+
+                    name_string = '- {0}'.format(function_name)
+
+                    if function_dict['test_info']['requires_update']:
+                        info_string = '- This function requires an update before being processed'
+                    else:
+                        info_string = '- {0}: {1}'.format(function_dict['name'], function_dict['test_info']['info'])
+
+                    desc_string = '- {0}'.format(function_dict['description'])
+
+                    processed += indent_string(name_string, 0)
+                    processed += indent_string(info_string, 1)
+                    processed += indent_string(desc_string, 2)
+                continue
+
+            # Now we know we have classes or defined functions left
+            processed += indent_string('- ' + class_name, 0)
+            if class_dict['type'] == 'class':
+                for function_name, function_dict in class_dict['function'].items():
+                    if function_dict['description'] is None:
+                        continue
+
+                    if function_dict['test_info']['requires_update']:
+                        info_string = '- This function requires an update before being processed'
+                    else:
+                        info_string = '- {0}: {1}'.format(function_dict['name'], function_dict['test_info']['info'])
+
+                    desc_string = '- {0}'.format(function_dict['description'])
+
+                    processed += indent_string(info_string, 1)
+                    processed += indent_string(desc_string, 2)
+
+            elif class_dict['type'] == 'function':
+                processed += indent_string('- ' + class_dict['name'])
+
+            else:
+                pass
+
+        processed += '\n'
+    return processed
+
+
+def otherstuff():
+    pass
+    # output += 'Class: {0}, defined at line `{1}` in {2}\n'.format(c_value.__name__,
+    #                                                               inspect.getsourcelines(c_value)[1],
+    #                                                               get_relative_path(c_value))
+
 # }}}
 if __name__ == "__main__":
+    sys.path.append(os.getcwd())
+
     parser = argparse.ArgumentParser(description='Update and report on test requirements')
     parser.add_argument('folder_name', type=str,
                         help='The folder name to run the operation on')
@@ -458,4 +573,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.mode == 'r':
-        print(report_folder(args.folder_name))
+        print(create_report(args.folder_name))
+    elif args.mode == 'u':
+        update_folder(args.folder_name)
+    elif args.mode == 'a':
+        update_folder(args.folder_name)
+        print(create_report(args.folder_name))

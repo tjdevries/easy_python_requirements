@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from easy_python_requirements import report_object, report_file, report_folder
+from os import walk
+import pathlib
+
+from easy_python_requirements import report_object, report_file, report_folder, update_folder, create_report
+from test.test_mock_functions import ListFileCleaner
 
 
 def test_print_obj():
@@ -20,4 +24,23 @@ def test_print_file():
 
 def test_print_folder():
     path = 'mock_functions/'
-    print(report_folder(path))
+    if False:
+        print(report_folder(path))
+
+
+def test_create_report():
+    effected_files = []
+    for path, subdirs, files in walk('./mock_functions/'):
+        for name in files:
+            if '__' in name:
+                continue
+            if 'pyc' in name:
+                continue
+            effected_files.append(str(pathlib.PurePath(path, name)))
+
+    with ListFileCleaner(effected_files):
+        folder_to_check = './mock_functions/'
+
+        update_folder(folder_to_check, False)
+
+        print(create_report(folder_to_check))
