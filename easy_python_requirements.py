@@ -75,6 +75,16 @@ def get_relative_path(obj):
         return str(file_path)
 
 
+def get_depth_of_file(file_name):
+    """
+    Get the filename length
+    """
+    if file_name[0:2] == './' or file_name[0:2] == '.\\':
+        file_name = file_name[2:]
+
+    return max(len(file_name.split('\\')), len(file_name.split('/')))
+
+
 def index_containing_substring(search_list, substring):
     for index, s in enumerate(search_list):
         if substring in s:
@@ -424,7 +434,7 @@ def explore_folder(foldername, recursive=True):
         explored[f] = explore_file(f)
 
     # TODO: Get the order sorted by files, then directories
-    explored = OrderedDict(sorted(explored.items(), key=lambda x: len(x[0].split('/'))))
+    explored = OrderedDict(sorted(explored.items(), key=lambda x: get_depth_of_file(x[0])))
 
     return explored
 
@@ -516,7 +526,8 @@ def create_report(path):
     processed = ''
     # section_tracker = []
     for file_name, file_dict in report.items():
-        processed += '# File: {0}\n\n'.format(file_name)
+        depth_of_dir = get_depth_of_file(file_name)
+        processed += '{1} File: {0}\n\n'.format(file_name, '#' * depth_of_dir)
 
         for class_name, class_dict in file_dict.items():
             # Check if we've come to the function key, which specifies functions without a class
