@@ -44,3 +44,8 @@ def test_create_report():
         update_folder(folder_to_check, False)
 
         print(create_report(folder_to_check))
+
+
+class TestYaml:
+    def test_yaml_output():
+        pass

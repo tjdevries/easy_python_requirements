@@ -4,7 +4,6 @@
 from shutil import copyfile
 from os import remove, sep, walk
 import pathlib
-import pytest
 
 from easy_python_requirements import parse_func, update_func, update_file, update_folder, read_json_info
 
@@ -105,7 +104,6 @@ def test_mock_function_with_multiple_modules():
                 break
 
 
-@pytest.mark.skip(reason='woot')
 def test_mock_module_with_two_updates():
     """
     This test should demonstrate adding two INFOs, one to the class and one to its function.

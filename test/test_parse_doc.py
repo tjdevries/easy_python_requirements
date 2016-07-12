@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import pytest
+
 from easy_python_requirements import parse_doc
 
 
@@ -50,6 +52,19 @@ class TestParseDoc:
         assert(desc == 'This is bad')
         assert(requirement_info['requires_update'] is True)
 
+    def test_parse_doc_no_begin(self):
+        docstring = """
+        This doesn't have a begin
+        TEST INFO: {"test_id": 6, "time_stamp": "2016-06-30T13:51:04.061138"}
+        This is not good.
+        TEST DESCRIPTION END
+        """
+        desc, requirement_info = parse_doc(docstring)
+
+    def test_parse_doc_no_end(self):
+        pass
+
+    def test_parse_doc_correct(self):
         docstring = """
         This one has valid info
         TEST INFO: {"test_id": 6, "time_stamp": "2016-06-30T13:51:04.061138"}
@@ -62,11 +77,48 @@ class TestParseDoc:
         assert(desc == 'This is good')
         assert(requirement_info['requires_update'] is False)
 
-    def test_parse_doc_no_begin(self):
-        pass
+    def test_parse_double_info(self):
+        # Test double test info, one valid
+        docstring = """
+        This one has valid info
+        TEST INFO: {"test_id": 6, "time_stamp": "2016-06-30T13:51:04.061138"}
+        TEST INFO:
+        TEST DESCRIPTION BEGIN
+        This is good
+        TEST DESCRIPTION END
+        """
+        with pytest.raises():
+            desc, requirement_info = parse_doc(docstring)
 
-    def test_parse_doc_no_end(self):
-        pass
+        # Test double test info, one valid
+        docstring = """
+        This one has valid info
+        TEST INFO:
+        TEST INFO: {"test_id": 6, "time_stamp": "2016-06-30T13:51:04.061138"}
+        TEST DESCRIPTION BEGIN
+        This is good
+        TEST DESCRIPTION END
+        """
+        desc, requirement_info = parse_doc(docstring)
 
-    def test_parse_doc_correct(self):
-        pass
+    def test_parse_double_begin(self):
+        docstring = """
+        This one has valid info
+        TEST INFO: {"test_id": 6, "time_stamp": "2016-06-30T13:51:04.061138"}
+        TEST DESCRIPTION BEGIN
+        TEST DESCRIPTION BEGIN
+        This is good
+        TEST DESCRIPTION END
+        """
+        desc, requirement_info = parse_doc(docstring)
+
+    def test_parse_double_end(self):
+        docstring = """
+        This one has valid info
+        TEST INFO: {"test_id": 6, "time_stamp": "2016-06-30T13:51:04.061138"}
+        TEST DESCRIPTION BEGIN
+        This is good
+        TEST DESCRIPTION END
+        TEST DESCRIPTION END
+        """
+        desc, requirement_info = parse_doc(docstring)
