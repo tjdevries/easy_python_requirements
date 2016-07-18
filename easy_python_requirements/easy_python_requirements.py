@@ -13,6 +13,8 @@ from collections import OrderedDict
 from datetime import datetime
 from pathlib import PurePath
 
+from easy_python_requirements.exceptions import MultipleStringError
+
 
 logging.basicConfig(stream=sys.stdout)
 logger = logging.getLogger()
@@ -133,12 +135,32 @@ def get_sorted_file_directory_structure(file_list, previous_info=None):
     # return sd
 
 
-def index_containing_substring(search_list, substring):
+def index_containing_substring(search_list, substring, multiples=True):
+    """
+    Find the index of the line that contains a substring
+
+    Args:
+        search_list (list): A list containing strings
+        substring (str): The string to search for in the list
+        multiples (Optional[bool]): Allow more than one string to be found
+    """
+    num_found = 0
+    list_index = -1
+
     for index, s in enumerate(search_list):
         if substring in s:
-            return index
+            if num_found == 0:
+                list_index = index
 
-    raise ValueError(search_list.index(substring))
+            num_found += 1
+
+    if list_index == -1:
+        raise ValueError(search_list.index(substring))
+    else:
+        if not multiples and num_found > 1:
+            raise MultipleStringError("Multiple {0} found in search_list.".format(substring))
+        else:
+            return list_index
 
 
 def get_functions(obj):
@@ -312,7 +334,7 @@ def parse_doc(docstring: str):
     requirement_description = '\n'.join(doclist[requirement_begin + 1:requirement_end])
 
     try:
-        requirement_info = index_containing_substring(doclist, config['requirement_info'])
+        requirement_info = index_containing_substring(doclist, config['requirement_info'], multiples=False)
     except ValueError:
         return [requirement_description, {'requires_update': True}]
 

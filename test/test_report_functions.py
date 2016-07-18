@@ -47,5 +47,5 @@ def test_create_report():
 
 
 class TestYaml:
-    def test_yaml_output():
+    def test_yaml_output(self):
         pass

@@ -122,7 +122,7 @@ def test_mock_module_with_two_updates():
             index = 0
             with open(f, 'r') as reader:
                 for line in reader.readlines():
-                    if index == 18:
+                    if index == 27:
                         json_info = read_json_info(line)
                         assert(json_info['test_id'] == 6)
 

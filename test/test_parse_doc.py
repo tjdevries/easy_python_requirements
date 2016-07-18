@@ -4,6 +4,7 @@
 import pytest
 
 from easy_python_requirements import parse_doc
+from easy_python_requirements.exceptions import MultipleStringError
 
 
 class TestParseDoc:
@@ -87,7 +88,7 @@ class TestParseDoc:
         This is good
         TEST DESCRIPTION END
         """
-        with pytest.raises():
+        with pytest.raises(MultipleStringError):
             desc, requirement_info = parse_doc(docstring)
 
         # Test double test info, one valid
@@ -99,7 +100,8 @@ class TestParseDoc:
         This is good
         TEST DESCRIPTION END
         """
-        desc, requirement_info = parse_doc(docstring)
+        with pytest.raises(MultipleStringError):
+            desc, requirement_info = parse_doc(docstring)
 
     def test_parse_double_begin(self):
         docstring = """
