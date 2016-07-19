@@ -17,8 +17,8 @@ def test_this_feature():
 
     TEST INFO:
     TEST DESCRIPTION BEGIN
-    This feature **shall** do the things it needs to.
-        This feautre **shall** always work.
+    - This feature **shall** do the things it needs to.
+        - This feature **shall** always work.
     TEST DESCRIPTION END
     """
     assert(this_feature.do == 'DONE')
@@ -35,8 +35,8 @@ def test_this_feature():
 
     TEST INFO: {'test_id': 1, 'time_stamp: today}
     TEST DESCRIPTION BEGIN
-    This feature **shall** do the things it needs to.
-        This feature **shall** always work.
+    - This feature **shall** do the things it needs to.
+        - This feature **shall** always work.
     TEST DESCRIPTION END
     """
     assert(this_feature.do == 'DONE')
@@ -47,8 +47,8 @@ and then it will output your test specifications:
 ```YAML
 test_id: 1
     description: |
-        This feature **shall** do the things it needs to.
-            This feature **shall** always work.
+        - This feature **shall** do the things it needs to.
+            - This feature **shall** always work.
     time_stamp: 'today'
 ```
 
