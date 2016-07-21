@@ -3,7 +3,7 @@
 
 import pytest
 
-from easy_python_requirements import parse_doc
+from easy_python_requirements.parsed import parse_doc
 from easy_python_requirements.exceptions import MultipleStringError
 
 

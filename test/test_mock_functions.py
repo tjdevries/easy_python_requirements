@@ -5,7 +5,8 @@ from shutil import copyfile
 from os import remove, sep, walk
 import pathlib
 
-from easy_python_requirements import parse_func, update_func, update_file, update_folder
+from easy_python_requirements import update_func, update_file, update_folder
+from easy_python_requirements.parsed import Parsed
 from easy_python_requirements.test_info import read_json_info
 
 
@@ -43,8 +44,10 @@ def test_mock_test_example_1():
     with FileCleaner('./mock_functions/test_example_1.py'):
         from mock_functions.test_example_1 import test_feature_example_1
 
-        requirement_info = parse_func(test_feature_example_1)
-        desc = requirement_info['description']
+        p = Parsed(test_feature_example_1)
+        p.parse()
+        requirement_info = p.test_info
+        desc = p.description
 
         assert(desc == 'This **shall** be caught')
         assert(requirement_info['requires_update'] is True)
@@ -67,8 +70,11 @@ def test_mock_function_in_module_1():
     with FileCleaner('./mock_functions/test_example_2.py'):
         from mock_functions.test_example_2 import ExampleClass
 
-        requirement_info = parse_func(ExampleClass.function_2)
-        desc = requirement_info['description']
+        p = Parsed(ExampleClass.function_2)
+        p.parse()
+
+        requirement_info = p.test_info
+        desc = p.description
 
         assert(desc == 'Requirement info')
         assert(requirement_info['requires_update'] is True)
@@ -91,8 +97,10 @@ def test_mock_function_with_multiple_modules():
     with FileCleaner('./mock_functions/test_example_3.py'):
         from mock_functions.test_example_3 import SecondClassExample
 
-        requirement_info = parse_func(SecondClassExample.this_doc_string_should_change)
-        desc = requirement_info['description']
+        p = Parsed(SecondClassExample.this_doc_string_should_change)
+        p.parse()
+        requirement_info = p.test_info
+        desc = p.description
 
         assert(desc == 'This is the only info that should be read or changed')
         assert(requirement_info['requires_update'] is True)
