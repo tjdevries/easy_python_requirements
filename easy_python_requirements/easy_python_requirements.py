@@ -41,35 +41,40 @@ def parse_doc(docstring: str):
         docstring (str): the docstring of the test function
 
     Returns:
-        list: [requirement_description, dictionary with info]
-            requirement_description: None if it could not be found,
-            otherwise it is a string with the description inside of it
+        dict: dictionary with info
 
-            dictionary_with_info: A dictionary filled with information
-            about the current test specification.
+        description: None if it could not be found,
+        otherwise it is a string with the description inside of it
+
+        test_info: A dictionary filled with information
+        about the current test specification.
+
+        requires_update: Bool representing whether this docstring needs
+        to be updated
     """
     doclist = trim(docstring).split('\n')
 
     try:
         requirement_begin = index_containing_substring(doclist, config['requirement_begin'])
     except ValueError:
-        return [None, {'requires_update': False}]
+        return {'requires_update': False, 'description': None}
 
     try:
         requirement_end = index_containing_substring(doclist, config['requirement_end'])
     except ValueError:
-        return [None, {'requires_update': False}]
+        return {'requires_update': False, 'description': None}
 
     requirement_description = '\n'.join(doclist[requirement_begin + 1:requirement_end])
 
     try:
         requirement_info = index_containing_substring(doclist, config['requirement_info'], multiples=False)
     except ValueError:
-        return [requirement_description, {'requires_update': True}]
+        return {'requires_update': True, 'description': requirement_description}
 
     info_dict = info_line_status(doclist, requirement_info)
+    info_dict['description'] = requirement_description
 
-    return [requirement_description, info_dict]
+    return info_dict
 
 
 def parse_func(f):
@@ -100,10 +105,10 @@ def update_func(f):
         dict: function information
             test_id: id of the function encountered
     """
-    desc, info_status = parse_doc(f.__doc__)
+    info_dict = parse_doc(f.__doc__)
 
-    if not info_status['requires_update']:
-        return info_status
+    if not info_dict['requires_update']:
+        return info_dict
 
     filename = inspect.getfile(f)
     with open(filename, 'r+') as location:
@@ -129,9 +134,9 @@ def update_class(cls):
     Returns:
         None
     """
-    desc, info_status = parse_doc(cls.__doc__)
+    info_dict = parse_doc(cls.__doc__)
 
-    if not info_status['requires_update']:
+    if not info_dict['requires_update']:
         return
 
     filename = inspect.getfile(cls)
@@ -261,7 +266,10 @@ def report_object(obj: object):
     output['name'] = obj.__name__
     output['type'] = get_type(obj)
 
-    output['description'], output['test_info'] = parse_func(obj)
+    parsed = parse_func(obj)
+    print(parsed)
+    output['description'] = parsed['description']
+    output['test_info'] = parsed
 
     output['file_info'] = {}
     output['file_info']['source'] = inspect.getsourcelines(obj)[0]
@@ -413,7 +421,8 @@ def json_report(obj):
     json_dict = {}
     json_dict['type'] = get_type(obj)
 
-    parsed, info_dict = parse_doc(obj.__doc__)
+    info_dict = parse_doc(obj.__doc__)
+    parsed = info_dict['description']
 
     json_dict['description'] = parsed.split('\n')
     json_dict['test_info'] = info_dict['test_info']

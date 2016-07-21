@@ -13,9 +13,7 @@ class TestParseDoc:
         This has got nothing important in it.
         Move along
         """
-        assert(parse_doc(docstring) == [None,
-                                        {'requires_update': False}
-                                        ])
+        assert(parse_doc(docstring) == {'requires_update': False, 'description': None})
 
     def test_parse_doc_empty_info(self):
         docstring = """
@@ -24,9 +22,7 @@ class TestParseDoc:
         But it does have some description
         TEST DESCRIPTION END
         """
-        assert(parse_doc(docstring) == ['But it does have some description',
-                                        {'requires_update': True}
-                                        ])
+        assert(parse_doc(docstring) == {'description': 'But it does have some description', 'requires_update': True})
 
     def test_parse_doc_existing_info(self):
         docstring = """
@@ -36,7 +32,8 @@ class TestParseDoc:
         Also with description
         TEST DESCRIPTION END
         """
-        desc, requirement_info = parse_doc(docstring)
+        requirement_info = parse_doc(docstring)
+        desc = requirement_info['description']
 
         assert(desc == 'Also with description')
         assert(requirement_info['requires_update'] is True)
@@ -48,7 +45,8 @@ class TestParseDoc:
         This is bad
         TEST DESCRIPTION END
         """
-        desc, requirement_info = parse_doc(docstring)
+        requirement_info = parse_doc(docstring)
+        desc = requirement_info['description']
 
         assert(desc == 'This is bad')
         assert(requirement_info['requires_update'] is True)
@@ -60,7 +58,9 @@ class TestParseDoc:
         This is not good.
         TEST DESCRIPTION END
         """
-        desc, requirement_info = parse_doc(docstring)
+        requirement_info = parse_doc(docstring)
+        desc = requirement_info['description']
+        print(desc)
 
     def test_parse_doc_no_end(self):
         pass
@@ -73,7 +73,8 @@ class TestParseDoc:
         This is good
         TEST DESCRIPTION END
         """
-        desc, requirement_info = parse_doc(docstring)
+        requirement_info = parse_doc(docstring)
+        desc = requirement_info['description']
 
         assert(desc == 'This is good')
         assert(requirement_info['requires_update'] is False)
@@ -89,7 +90,7 @@ class TestParseDoc:
         TEST DESCRIPTION END
         """
         with pytest.raises(MultipleStringError):
-            desc, requirement_info = parse_doc(docstring)
+            requirement_info = parse_doc(docstring)
 
         # Test double test info, one valid
         docstring = """
@@ -101,7 +102,8 @@ class TestParseDoc:
         TEST DESCRIPTION END
         """
         with pytest.raises(MultipleStringError):
-            desc, requirement_info = parse_doc(docstring)
+            requirement_info = parse_doc(docstring)
+            print(requirement_info)
 
     def test_parse_double_begin(self):
         docstring = """
@@ -112,7 +114,8 @@ class TestParseDoc:
         This is good
         TEST DESCRIPTION END
         """
-        desc, requirement_info = parse_doc(docstring)
+        requirement_info = parse_doc(docstring)
+        print(requirement_info)
 
     def test_parse_double_end(self):
         docstring = """
@@ -123,4 +126,5 @@ class TestParseDoc:
         TEST DESCRIPTION END
         TEST DESCRIPTION END
         """
-        desc, requirement_info = parse_doc(docstring)
+        requirement_info = parse_doc(docstring)
+        print(requirement_info)

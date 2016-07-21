@@ -43,7 +43,8 @@ def test_mock_test_example_1():
     with FileCleaner('./mock_functions/test_example_1.py'):
         from mock_functions.test_example_1 import test_feature_example_1
 
-        desc, requirement_info = parse_func(test_feature_example_1)
+        requirement_info = parse_func(test_feature_example_1)
+        desc = requirement_info['description']
 
         assert(desc == 'This **shall** be caught')
         assert(requirement_info['requires_update'] is True)
@@ -66,7 +67,8 @@ def test_mock_function_in_module_1():
     with FileCleaner('./mock_functions/test_example_2.py'):
         from mock_functions.test_example_2 import ExampleClass
 
-        desc, requirement_info = parse_func(ExampleClass.function_2)
+        requirement_info = parse_func(ExampleClass.function_2)
+        desc = requirement_info['description']
 
         assert(desc == 'Requirement info')
         assert(requirement_info['requires_update'] is True)
@@ -89,7 +91,8 @@ def test_mock_function_with_multiple_modules():
     with FileCleaner('./mock_functions/test_example_3.py'):
         from mock_functions.test_example_3 import SecondClassExample
 
-        desc, requirement_info = parse_func(SecondClassExample.this_doc_string_should_change)
+        requirement_info = parse_func(SecondClassExample.this_doc_string_should_change)
+        desc = requirement_info['description']
 
         assert(desc == 'This is the only info that should be read or changed')
         assert(requirement_info['requires_update'] is True)
