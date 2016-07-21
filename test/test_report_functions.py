@@ -3,8 +3,14 @@
 
 from os import walk
 import pathlib
+import json
 
-from easy_python_requirements import report_object, report_file, report_folder, update_folder, create_report
+from easy_python_requirements import (report_object,
+                                      report_file,
+                                      report_folder,
+                                      update_folder,
+                                      create_report,
+                                      json_report)
 from test.test_mock_functions import ListFileCleaner
 
 
@@ -49,3 +55,48 @@ def test_create_report():
 class TestYaml:
     def test_yaml_output(self):
         pass
+
+
+class TestJSON:
+    def test_basic_json_output(self):
+        from mock_functions.test_module_stuff import FirstClass
+
+        json_class = json.loads(json_report(FirstClass))
+
+        assert(json_class['type'] == 'class')
+        assert(json_class['test_info'] == {"time_stamp": "2016-07-02T10:45:57.539011", "test_id": 4})
+        assert(json_class['description'] == ["This is a class description",
+                                             "It is multiple lines",
+                                             "It should all be nicely formatted"
+                                             ])
+
+    def test_recursive_json_output(self):
+        from mock_functions.test_module_stuff import FirstClass
+
+        json_class = json.loads(json_report(FirstClass))
+        print(json_class)
+
+        # assert(json_class['functions'])
+
+
+'''
+class FirstClass:
+    """
+    TEST INFO: {"time_stamp": "2016-07-02T10:45:57.539011", "test_id": 4}
+    TEST DESCRIPTION BEGIN
+    This is a class description
+    It is multiple lines
+    It should all be nicely formatted
+    TEST DESCRIPTION END
+    Doesn't really matter
+    """
+    def function_that_should_not_change(self):
+        """
+        TEST INFO: {"time_stamp": "2016-07-01T10:45:56.539011", "test_id": 5}
+        TEST DESCRIPTION BEGIN
+        This should never be touched
+        TEST DESCRIPTION END
+        Other stuff here
+        """
+        pass
+'''

@@ -5,7 +5,8 @@ from shutil import copyfile
 from os import remove, sep, walk
 import pathlib
 
-from easy_python_requirements import parse_func, update_func, update_file, update_folder, read_json_info
+from easy_python_requirements import parse_func, update_func, update_file, update_folder
+from easy_python_requirements.test_info import read_json_info
 
 
 class FileCleaner:

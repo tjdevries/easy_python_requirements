@@ -10,10 +10,14 @@ import os
 import logging
 import sys
 from collections import OrderedDict
-from datetime import datetime
-from pathlib import PurePath
 
-from easy_python_requirements.exceptions import MultipleStringError
+from easy_python_requirements.util import (
+    trim, indent_string, index_containing_substring, get_source_lines,
+    get_classes, get_functions, get_depth_of_file, get_type, get_relative_path,
+)
+from easy_python_requirements.test_info import (
+    create_json_info, append_json_info, info_line_status
+)
 
 
 logging.basicConfig(stream=sys.stdout)
@@ -27,282 +31,7 @@ config = {
     'info_format': ['test_id', 'time_stamp'],
 }
 
-highest_id = 0
 
-
-# {{{ Utility Functions
-def trim(docstring):
-    """ From PEP """
-    if not docstring:
-        return ''
-    # Convert tabs to spaces (following the normal Python rules)
-    # and split into a list of lines:
-    lines = docstring.expandtabs().splitlines()
-    # Determine minimum indentation (first line doesn't count):
-    indent = 99
-    for line in lines[1:]:
-        stripped = line.lstrip()
-        if stripped:
-            indent = min(indent, len(line) - len(stripped))
-    # Remove indentation (first line is special):
-    trimmed = [lines[0].strip()]
-    if indent < 99:
-        for line in lines[1:]:
-            trimmed.append(line[indent:].rstrip())
-    # Strip off trailing and leading blank lines:
-    while trimmed and not trimmed[-1]:
-        trimmed.pop()
-    while trimmed and not trimmed[0]:
-        trimmed.pop(0)
-    # Return a single string:
-    return '\n'.join(trimmed)
-
-
-def indent_string(string, level=1):
-    if string is None:
-        return ''
-    output = '\n'.join(['    ' * level + line for line in string.split('\n')])
-    if output[:-2] != '\n':
-        output += '\n'
-
-    return output
-
-
-def get_relative_path(obj):
-    file_path = PurePath(inspect.getfile(obj))
-    try:
-        return str(file_path.relative_to(os.getcwd()))
-    except ValueError:
-        logger.warning('Could not get relative for {0} and {1}'.format(str(file_path), os.getcwd()))
-        return str(file_path)
-
-
-def get_depth_of_file(file_name):
-    """
-    Get the filename length
-    """
-    if file_name[0:2] == './' or file_name[0:2] == '.\\':
-        file_name = file_name[2:]
-
-    return max(len(file_name.split('\\')), len(file_name.split('/')))
-
-
-def get_separator(file_name):
-    if '\\' in file_name:
-        return '\\'
-    else:
-        return '/'
-
-
-def get_sorted_file_directory_structure(file_list, previous_info=None):
-    # TODO: This is the file to handle the nicer formatting structure
-    # sorted dict
-    sd = OrderedDict()
-
-    for name in file_list:
-        sd[name] = name
-
-    return sd
-    # sd['./'] = []
-    # # print('.' + get_separator(file_list[0]))
-
-    # for name in file_list:
-    #     depth = get_depth_of_file(name) - 1
-
-    #     beginning = name.split(get_separator(name))[0]
-    #     end = get_separator(name).join(name.split(get_separator(name))[1:])
-
-    #     print(beginning, end, depth)
-
-    #     if depth > 0:
-    #         if beginning not in sd.keys():
-    #             if previous_info:
-    #                 previous_info[0][previous_info[1]][beginning] = []
-    #                 print(dict(previous_info[0].items()), previous_info[1] + '/' + beginning)
-    #             else:
-    #                 sd[beginning] = []
-
-    #         # sd[beginning].append(get_sorted_file_directory_structure([end], (sd, beginning)))
-    #         get_sorted_file_directory_structure([end], (sd, beginning))
-    #     else:
-    #         # sd['./'].append(name)
-    #         if previous_info:
-    #             print(previous_info)
-    #             previous_info[0][previous_info[1]].append(name)
-    #         else:
-    #             sd['./'].append(name)
-
-    # return sd
-
-
-def index_containing_substring(search_list, substring, multiples=True):
-    """
-    Find the index of the line that contains a substring
-
-    Args:
-        search_list (list): A list containing strings
-        substring (str): The string to search for in the list
-        multiples (Optional[bool]): Allow more than one string to be found
-    """
-    num_found = 0
-    list_index = -1
-
-    for index, s in enumerate(search_list):
-        if substring in s:
-            if num_found == 0:
-                list_index = index
-
-            num_found += 1
-
-    if list_index == -1:
-        raise ValueError(search_list.index(substring))
-    else:
-        if not multiples and num_found > 1:
-            raise MultipleStringError("Multiple {0} found in search_list.".format(substring))
-        else:
-            return list_index
-
-
-def get_functions(obj):
-    return inspect.getmembers(obj, inspect.isfunction)
-
-
-def get_classes(obj):
-    return inspect.getmembers(obj, inspect.isclass)
-
-
-def get_modules(obj):
-    return inspect.getmembers(obj, inspect.getmodule)
-
-
-def get_type(obj):
-    if inspect.isclass(obj):
-        return 'class'
-    elif inspect.isfunction(obj):
-        return 'function'
-    else:
-        return str(type(obj))
-
-
-def get_source_lines(lines: list, obj) -> int:
-    """
-    Get the line number where the object definition occurs
-
-    Args:
-        lines (list): The lines of the file
-        obj: An obect (either a class or function) to get the line number
-
-    Returns:
-        (int, int): The line number where the definition first occurs, and the last line of source
-    """
-    source_lines = inspect.getsourcelines(obj)[0]
-    source_length = len(source_lines)
-
-    for index in range(len(lines) - source_length):
-        if source_lines == lines[index:index + source_length]:
-            return index, index + source_length
-
-    return None, None
-
-
-# }}}
-# {{{ TEST INFO functions
-def create_json_info():
-    global highest_id
-
-    highest_id += 1
-    test_id = highest_id
-
-    time_stamp = str(datetime.today().isoformat())
-
-    return json.dumps({'test_id': test_id, 'time_stamp': time_stamp})
-
-
-def read_json_info(test_info_line: str):
-    """
-    Essentially the reverse of create_json_info.
-    Gets the json info from a line.
-
-    Args:
-        test_info_line (str): The line containing the json info
-
-    Returns:
-        dict: JSON info dictionary
-    """
-    return json.loads(':'.join(test_info_line.split(':')[1:]))
-
-
-def append_json_info(filename, index, value):
-    """
-    Append the json info to the correct line in the file.
-
-    Args:
-        index (int): The line number to append to.
-        value (str): The item to append to the line
-        previous_info (dict): The previous info in the dictionary
-            TODO: Use this
-
-    Returns:
-        None
-    """
-    with open(filename, "r") as f:
-        contents = f.readlines()
-
-    logger.debug('Appending {0} to line {1} of {2}'.format(
-        value,
-        index,
-        filename
-    ))
-    contents[index] = contents[index].replace('\n', '') + ' ' + value + '\n'
-
-    with open(filename, "w") as f:
-        f.writelines(contents)
-
-
-def info_line_status(doclist, info_index):
-    """
-    Determine the attributes of the info line
-
-    Args:
-        doclist (list): The docstring -> list
-        info_index (int): The index to begin checking at
-
-    Returns:
-        dict: Information dictionary, specifying important info
-    """
-    global highest_id
-    info_dict = {}
-
-    # If the test info line contains just a place holder
-    if doclist[info_index] == config['requirement_info']:
-        info_dict['requires_update'] = True
-    else:
-        # Proper info is automatically recorded in JSON,
-        #   so if it doesn't properly load into JSON then it's wrong
-        try:
-            info_json = json.loads(doclist[info_index].split(config['requirement_info'])[1])
-
-            if all(x in info_json.keys() for x in config['info_format']):
-                info_dict['requires_update'] = False
-            else:
-                info_dict['requires_update'] = True
-        except ValueError:
-            info_dict['requires_update'] = True
-
-    # Get info if it doesn't need to be updated
-    if info_dict['requires_update'] is False:
-        info_dict['info'] = {}
-        for key in info_json.keys():
-            info_dict['info'][key] = info_json[key]
-
-        # Any specific cleanup required
-        # print(info_dict)
-        highest_id = max(info_dict['info']['test_id'], highest_id)
-
-    return info_dict
-
-
-# }}}
 # {{{ Parsing Functions
 def parse_doc(docstring: str):
     """
@@ -629,7 +358,7 @@ def create_report(path):
                     if function_dict['test_info']['requires_update']:
                         info_string = '- This function requires an update before being processed'
                     else:
-                        info_string = '- {0}: {1}'.format(function_dict['name'], function_dict['test_info']['info'])
+                        info_string = '- {0}: {1}'.format(function_dict['name'], function_dict['test_info']['test_info'])
 
                     desc_string = '- {0}'.format(function_dict['description'])
 
@@ -648,7 +377,7 @@ def create_report(path):
                     if function_dict['test_info']['requires_update']:
                         info_string = '- This function requires an update before being processed'
                     else:
-                        info_string = '- {0}: {1}'.format(function_dict['name'], function_dict['test_info']['info'])
+                        info_string = '- {0}: {1}'.format(function_dict['name'], function_dict['test_info']['test_info'])
 
                     desc_string = '- {0}'.format(function_dict['description'])
 
@@ -672,6 +401,26 @@ def otherstuff():
     #                                                               get_relative_path(c_value))
 
 # }}}
+
+
+def json_report(obj):
+    """
+    Take an object and create a JSON object that represents all the pertinent report information
+
+    Args:
+        obj (object): The object to be created
+    """
+    json_dict = {}
+    json_dict['type'] = get_type(obj)
+
+    parsed, info_dict = parse_doc(obj.__doc__)
+
+    json_dict['description'] = parsed.split('\n')
+    json_dict['test_info'] = info_dict['test_info']
+
+    return json.dumps(json_dict)
+
+
 if __name__ == "__main__":
     logger.debug('Appending `{0}` to sys.path'.format(os.getcwd()))
     sys.path.append(os.getcwd())
