@@ -5,7 +5,7 @@ from shutil import copyfile
 from os import remove, sep, walk
 import pathlib
 
-from easy_python_requirements import update_func, update_file, update_folder
+from easy_python_requirements.update import update_func, update_file, update_folder
 from easy_python_requirements.parsed import Parsed
 from easy_python_requirements.test_info import read_json_info
 
@@ -46,11 +46,10 @@ def test_mock_test_example_1():
 
         p = Parsed(test_feature_example_1)
         p.parse()
-        requirement_info = p.test_info
         desc = p.description
 
         assert(desc == 'This **shall** be caught')
-        assert(requirement_info['requires_update'] is True)
+        assert(p.requires_update is True)
 
         update_func(test_feature_example_1)
 
@@ -73,11 +72,10 @@ def test_mock_function_in_module_1():
         p = Parsed(ExampleClass.function_2)
         p.parse()
 
-        requirement_info = p.test_info
         desc = p.description
 
         assert(desc == 'Requirement info')
-        assert(requirement_info['requires_update'] is True)
+        assert(p.requires_update is True)
 
         update_func(ExampleClass.function_2)
 
@@ -99,11 +97,10 @@ def test_mock_function_with_multiple_modules():
 
         p = Parsed(SecondClassExample.this_doc_string_should_change)
         p.parse()
-        requirement_info = p.test_info
         desc = p.description
 
         assert(desc == 'This is the only info that should be read or changed')
-        assert(requirement_info['requires_update'] is True)
+        assert(p.requires_update is True)
 
         update_func(SecondClassExample.this_doc_string_should_change)
 

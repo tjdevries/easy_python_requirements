@@ -35,7 +35,7 @@ def update_func(f):
     p.parse()
 
     info_dict = p.test_info
-    if not info_dict['requires_update']:
+    if not p.requires_update:
         return info_dict
 
     filename = inspect.getfile(f)
@@ -65,9 +65,7 @@ def update_class(cls):
     p = Parsed(cls)
     p.parse()
 
-    info_dict = p.test_info
-
-    if not info_dict['requires_update']:
+    if not p.requires_update:
         return
 
     filename = inspect.getfile(cls)

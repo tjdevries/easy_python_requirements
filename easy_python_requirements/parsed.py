@@ -41,6 +41,7 @@ class Parsed:
         obj_dict = parse_doc(self.obj_docstring)
 
         self.description = obj_dict.pop('description', None)
+        self.requires_update = obj_dict.pop('requires_update', True)
         self.test_info = obj_dict.pop('test_info', None)
 
         # Handle differences between functions and classes
