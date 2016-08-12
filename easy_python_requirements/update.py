@@ -93,14 +93,14 @@ def update_file(filename):
     Get, parse and update the file with the correct info
     """
     explored = OrderedDict()
-    explored = explore_file(filename)
+    explored = ExploredFile(filename)
 
-    for c_name, c_value in explored['module'].items():
+    for c_name, c_value in explored.module.items():
         update_class(c_name)
         for f_name, f_value in c_value.items():
             update_func(f_value)
 
-    for f_name, f_value in explored['function'].items():
+    for f_name, f_value in explored.function.items():
         update_func(f_value)
 
 
@@ -114,32 +114,46 @@ def update_folder(path, recursive=True):
     return
 
 
-def explore_file(filename):
-    # loader = importlib.machinery.SourceFileLoader('', filename)
-    # module = loader.load_module('')
-    if filename[0:2] == './' or filename[0:2] == '.\\':
-        filename = filename[2:]
+class ExploredFile:
+    def __init__(self, filename):
+        if filename[0:2] == './' or filename[0:2] == '.\\':
+            filename = filename[2:]
+        self.filename = filename
+        self.mod_name = filename.replace('/', '.').replace('\\', '.')[:-3]
 
-    mod_name = filename.replace('/', '.').replace('\\', '.')[:-3]
-    logger.debug('Importing filename {0} from filename {1} with cwd: {2}'.format(mod_name, filename, os.getcwd()))
+        logger.debug('Importing filename {0} from filename {1} with cwd: {2}'.format(self.mod_name, self.filename, os.getcwd()))
+        self.imported_module = importlib.import_module(self.mod_name)
 
-    module = importlib.import_module(mod_name)
-    # module = importlib.reload(module)
+        self.module = OrderedDict()
+        self.function = OrderedDict()
 
-    explored = {'module': OrderedDict(), 'function': OrderedDict()}
-    for c_name, c_member in get_classes(module):
-        current = OrderedDict()
-        Parsed(c_member).parse()
-        for f_name, f_member in get_functions(c_member):
-            current[f_name] = f_member
-            Parsed(f_member).parse()
+    def explore(self):
+        """
+        Explore the file and update any internal attributes required
 
-        explored['module'][c_member] = current
+        Returns: None
+        """
+        for c_name, c_member in self.classes:
+            current = OrderedDict()
+            Parsed(c_member).parse()
+            for f_name, f_member in get_functions(c_member):
+                current[f_name] = f_member
+                Parsed(f_member).parse()
 
-    for f_name, f_member in get_functions(module):
-        explored['function'][f_name] = f_member
+            self.module[c_member] = current
 
-    return explored
+        for f_name, f_member in get_functions(self.imported_module):
+            self.function[f_name] = f_member
+
+    @property
+    def classes(self):
+        """
+        Return a list of tuples containing the name and a member of the classes
+
+        Returns:
+            list: Of the form [ (c_name, c_member), (c_name, c_member), ... ]
+        """
+        return get_classes(self.imported_module)
 
 
 def explore_folder(foldername, recursive=True):
@@ -162,7 +176,9 @@ def explore_folder(foldername, recursive=True):
 
     for f in files_to_load:
         logger.info('File: {0}'.format(f))
-        explored[f] = explore_file(f)
+        temp = ExploredFile(f)
+        temp.explore()
+        explored[f] = temp
 
     # TODO: Get the order sorted by files, then directories
     explored = OrderedDict(sorted(explored.items(), key=lambda x: get_depth_of_file(x[0])))

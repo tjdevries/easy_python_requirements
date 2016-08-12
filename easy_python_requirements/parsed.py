@@ -1,7 +1,9 @@
 
+import inspect
+
 from easy_python_requirements import config
 from easy_python_requirements.util import (
-    trim, index_containing_substring, get_type, get_functions
+    trim, index_containing_substring, get_type, get_functions, get_relative_path,
 )
 from easy_python_requirements.test_info import (
     info_line_status,
@@ -34,7 +36,7 @@ class Parsed:
         self.obj_type = get_type(obj)
         self.obj_docstring = obj.__doc__
         self.description = ''
-        self.test_info = {}
+        self.test_info = TestInfo({})
         self.children = {}
 
     def parse(self):
@@ -42,7 +44,7 @@ class Parsed:
 
         self.description = obj_dict.pop('description', None)
         self.requires_update = obj_dict.pop('requires_update', True)
-        self.test_info = obj_dict.pop('test_info', None)
+        self.test_info = TestInfo(obj_dict.pop('test_info', {'requires_update': True}))
 
         # Handle differences between functions and classes
         if self.obj_type == 'function':
@@ -54,6 +56,8 @@ class Parsed:
                 temp_parsed = Parsed(func[1])
                 temp_parsed.parse()
                 self.children[func[0]] = temp_parsed
+
+        self.file_info = FileInfo(self.obj)
 
     def to_json(self):
         pass
@@ -69,6 +73,22 @@ class Parsed:
 
     def __str__(self):
         return '<Parsed: {0}>'.format(self.obj.__name__)
+
+
+class FileInfo:
+    def __init__(self, obj: object):
+        self.source = inspect.getsourcelines(obj)[0]
+        self.line_number = inspect.getsourcelines(obj)[1]
+        self.absolute_name = inspect.getfile(obj)
+        self.relative_name = get_relative_path(obj)
+
+
+class TestInfo:
+    def __init__(self, info: dict):
+        self._info = info
+        self.requires_update = info.get('requires_update', True)
+
+        # TODO: Map other attributes
 
 
 def parse_doc(docstring: str):
