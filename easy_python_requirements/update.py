@@ -92,8 +92,8 @@ def update_file(filename):
     """
     Get, parse and update the file with the correct info
     """
-    explored = OrderedDict()
     explored = ExploredFile(filename)
+    explored.explore()
 
     for c_name, c_value in explored.module.items():
         update_class(c_name)

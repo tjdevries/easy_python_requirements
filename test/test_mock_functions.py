@@ -132,6 +132,7 @@ def test_mock_module_with_two_updates():
             with open(f, 'r') as reader:
                 for line in reader.readlines():
                     if index == 27:
+                        print(line)
                         json_info = read_json_info(line)
                         assert(json_info['test_id'] == 6)
 

@@ -9,7 +9,8 @@ class TestParse:
         p.parse()
 
         assert(p.obj_type == 'class')
-        assert(p.test_info == {"time_stamp": "2016-07-02T10:45:57.539011", "test_id": 4})
+        assert(p.test_info.time_stamp == '2016-07-02T10:45:57.539011')
+        assert(p.test_info.test_id == 4)
         assert(p.description == '\n'.join(["This is a class description",
                                            "It is multiple lines",
                                            "It should all be nicely formatted"]))

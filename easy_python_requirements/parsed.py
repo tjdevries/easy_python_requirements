@@ -87,6 +87,8 @@ class TestInfo:
     def __init__(self, info: dict):
         self._info = info
         self.requires_update = info.get('requires_update', True)
+        self.time_stamp = info.get('time_stamp', '')
+        self.test_id = info.get('test_id', -1)
 
         # TODO: Map other attributes
 
