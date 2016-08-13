@@ -9,5 +9,7 @@ setup(
     url='https://github.com/tjdevries/easy_python_requirements',
     download_url='https://github.com/tjdevries/easy_python_requirements/tarball/0.1',
     keywords=['testing', 'requirements', 'easy'],
+    # setup_requires=['pytest-runner'],
+    # tests_require=['pytest',],
     classifiers=[],
 )
