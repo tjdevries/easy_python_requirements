@@ -1,5 +1,9 @@
 # easy_python_requirements
 
+[![Coverage Status](https://coveralls.io/repos/github/tjdevries/easy_python_requirements/badge.svg?branch=master)](https://coveralls.io/github/tjdevries/easy_python_requirements?branch=master)
+[![Build Status](https://travis-ci.org/tjdevries/easy_python_requirements.svg?branch=master)](https://travis-ci.org/tjdevries/easy_python_requirements)
+[![Code Health](https://landscape.io/github/tjdevries/easy_python_requirements/master/landscape.svg?style=flat)](https://landscape.io/github/tjdevries/easy_python_requirements/master)
+
 Light program to specify test requirements in the docstring of a test and get easy documentation.
 
 This package was designed to combat those times where you want to track some basic information about the tests (particularly functional tests) in a project, but don't want to spend a lot of time editing markdown documents, managing / tracking information and overall feel like you're wasting time.
