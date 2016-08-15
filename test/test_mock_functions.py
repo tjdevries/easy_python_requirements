@@ -5,7 +5,7 @@ from shutil import copyfile
 from os import remove, sep, walk
 import pathlib
 
-from easy_python_requirements.update import update_func, update_file, update_folder
+from easy_python_requirements.update import update_func, update_file, update_folder, update_class
 from easy_python_requirements.parsed import Parsed
 from easy_python_requirements.test_info import read_json_info
 
@@ -164,3 +164,24 @@ def test_mock_folder_update():
                 for line in reader.readlines():
                     if 'TEST INFO' in line:
                         print(f, line)
+
+
+def test_mock_class_update():
+    with FileCleaner('./mock_functions/test_module_stuff.py'):
+        from mock_functions.test_module_stuff import SecondClass
+
+        update_class(SecondClass)
+
+        with open('./mock_functions/test_module_stuff.py', 'r') as reader:
+            desired_line = -1
+            index = 0
+            for line in reader.readlines():
+                if 'SecondClass' in line:
+                    desired_line = index + 2
+
+                if index == desired_line:
+                    print(line)
+                    json_info = read_json_info(line)
+                    assert(json_info['test_id'] > 1)
+
+                index += 1

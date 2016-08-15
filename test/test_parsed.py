@@ -24,3 +24,11 @@ class TestParse:
         assert(p.children != {})
         assert('function_that_should_not_change' in p.children.keys())
         assert(p.children['function_that_should_not_change'].obj_type == 'function')
+
+    def test_parsed_string_repr(self):
+        from mock_functions.test_module_stuff import FirstClass
+
+        p = Parsed(FirstClass)
+        p.parse()
+
+        assert(str(p) == '<Parsed: FirstClass>')

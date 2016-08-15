@@ -4,5 +4,3 @@ config = {
     'requirement_info': 'TEST INFO:',
     'info_format': ['test_id', 'time_stamp'],
 }
-
-from easy_python_requirements.easy_python_requirements import *

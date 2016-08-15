@@ -2,46 +2,13 @@
 # -*- coding: utf-8 -*-
 
 import argparse
-import json
 import os
 import logging
 import sys
 
-from easy_python_requirements.util import (
-    get_type,
-)
-from easy_python_requirements.parsed import Parsed
-
-
 logging.basicConfig(stream=sys.stdout)
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-
-
-def otherstuff():
-    pass
-    # output += 'Class: {0}, defined at line `{1}` in {2}\n'.format(c_value.__name__,
-    #                                                               inspect.getsourcelines(c_value)[1],
-    #                                                               get_relative_path(c_value))
-
-
-def json_report(obj):
-    """
-    Take an object and create a JSON object that represents all the pertinent report information
-
-    Args:
-        obj (object): The object to be created
-    """
-    json_dict = {}
-    json_dict['type'] = get_type(obj)
-
-    p = Parsed(obj)
-    p.parse()
-
-    json_dict['description'] = p.description.split('\n')
-    json_dict['test_info'] = p.test_info
-
-    return json.dumps(json_dict)
 
 
 if __name__ == "__main__":

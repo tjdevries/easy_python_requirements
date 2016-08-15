@@ -39,40 +39,42 @@ def trim(docstring):
     return '\n'.join(trimmed)
 
 
-def indent_string(string, level=1):
+def indent_string(string, level=1, spacing='    '):
     if string is None:
         return ''
-    output = '\n'.join(['    ' * level + line for line in string.split('\n')])
-    if output[:-2] != '\n':
-        output += '\n'
+
+    lines = []
+
+    for line in string.split('\n'):
+        if line:
+            lines.append(spacing * level + line)
+    output = '\n'.join(lines) + '\n'
 
     return output
 
 
-def get_relative_path(obj):
+def get_relative_path(obj, current_path=''):
+    if current_path == '':
+        current_path = os.getcwd()
+
     file_path = PurePath(inspect.getfile(obj))
     try:
-        return str(file_path.relative_to(os.getcwd()))
+        return str(file_path.relative_to(current_path))
     except ValueError:
-        logger.warning('Could not get relative for {0} and {1}'.format(str(file_path), os.getcwd()))
+        logger.warning('Could not get relative for {0} and {1}'.format(str(file_path), current_path))
         return str(file_path)
 
 
-def get_depth_of_file(file_name):
+def get_depth_of_file(file_name: str):
     """
     Get the filename length
     """
-    if file_name[0:2] == './' or file_name[0:2] == '.\\':
+    file_name = file_name.replace('\\', '/')
+
+    if file_name[0:2] == './':
         file_name = file_name[2:]
 
-    return max(len(file_name.split('\\')), len(file_name.split('/')))
-
-
-def get_separator(file_name):
-    if '\\' in file_name:
-        return '\\'
-    else:
-        return '/'
+    return len(file_name.split('/'))
 
 
 def get_sorted_file_directory_structure(file_list, previous_info=None):

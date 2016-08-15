@@ -63,7 +63,16 @@ class TestParseDoc:
         print(desc)
 
     def test_parse_doc_no_end(self):
-        pass
+        docstring = """
+        This does have a begin.
+        But it does not have an end
+        TEST INFO: {"test_id": 6, "time_stamp": "2016-06-30T13:51:04.061138"}
+        TEST DESCRIPTION BEGIN
+        Some information but this isn't good
+        """
+        requirement_info = parse_doc(docstring)
+        desc = requirement_info['description']
+        print(desc)
 
     def test_parse_doc_correct(self):
         docstring = """

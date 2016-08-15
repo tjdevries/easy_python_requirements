@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import json
 import logging
 import sys
 from collections import OrderedDict
@@ -196,3 +197,25 @@ class ReportObject:
         self.file_info = p.file_info
 
         self.function = OrderedDict()
+
+        self.important_attributes = ['description',
+                                     'test_info',
+                                     'file_info',
+                                     'type',
+                                     'name',
+                                     'function'
+                                     ]
+
+    def to_json(self):
+        """
+        Take an object and create a JSON object that represents all the pertinent report information
+
+        Args:
+            obj (object): The object to be created
+        """
+        json_dict = {}
+
+        for attr in self.important_attributes:
+            json_dict[attr] = getattr(self, attr)
+
+        return json.dumps(json_dict)

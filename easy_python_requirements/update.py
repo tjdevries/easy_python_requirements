@@ -76,13 +76,9 @@ def update_class(cls):
     first_line, last_line = get_source_lines(lines, cls)
 
     with open(filename, 'r+') as location:
-        for index, line in enumerate(location.readlines()):
-            # We have not reached the function yet
-            if index < first_line or index > last_line:
-                continue
-
+        for index, line in enumerate(location.readlines()[first_line:last_line]):
             if config['requirement_info'] in line:
-                test_info_index = index
+                test_info_index = index + first_line
                 break
 
     append_json_info(filename, test_info_index, create_json_info())
