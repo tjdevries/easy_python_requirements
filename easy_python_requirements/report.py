@@ -4,6 +4,7 @@
 import json
 import logging
 import sys
+import yaml
 from collections import OrderedDict
 
 from easy_python_requirements.parsed import Parsed
@@ -48,6 +49,20 @@ class Report:
 
     def to_rst(self):
         pass
+
+    def to_doorstop(self):
+        attributes = {
+            'active': True,
+            'derived': False,
+            'level': '0',
+            'links': [],
+            'normative': True,
+            'ref': '',
+            'reviewed': None,
+            'text': ''
+        }
+
+        return yaml.dump(attributes)
 
     def to_markdown(self):
         logger.info('Reporting on path: {0}'.format(self.path))
