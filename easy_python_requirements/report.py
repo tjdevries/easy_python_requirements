@@ -139,6 +139,23 @@ class Report:
         return processed
 
 
+class FileIterator:
+    def __init__(self, report):
+        self.report = report
+
+    def __iter__(self):
+        self.index = 0
+        self.items = self.report.items()
+        return self
+
+    def __next__(self):
+        self.index += 1
+
+        if self.index < len(self.items):
+            return self.items[self.index]
+        else:
+            raise StopIteration
+
 # def report_file(filename):
 #     explored = ExploredFile(filename)
 
@@ -161,6 +178,7 @@ class Report:
 #             output['function'][function_report['name']] = function_report
 
 #     return output
+
 
 class ReportFile:
     def __init__(self, filename):
