@@ -20,7 +20,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
-def update_func(f):
+def update_func(function):
     """
     Update the info for a function
 
@@ -31,18 +31,18 @@ def update_func(f):
         dict: function information
             test_id: id of the function encountered
     """
-    p = Parsed(f)
-    p.parse()
+    parsed = Parsed(function)
+    parsed.parse()
 
-    info_dict = p.test_info
-    if not p.requires_update:
+    info_dict = parsed.test_info
+    if not parsed.requires_update:
         return info_dict
 
-    filename = inspect.getfile(f)
+    filename = inspect.getfile(function)
     with open(filename, 'r+') as location:
         for index, line in enumerate(location.readlines()):
             # We have not reached the function yet
-            if index < f.__code__.co_firstlineno:
+            if index < function.__code__.co_firstlineno:
                 continue
 
             if 'TEST INFO' in line:
@@ -62,10 +62,10 @@ def update_class(cls):
     Returns:
         None
     """
-    p = Parsed(cls)
-    p.parse()
+    parsed = Parsed(cls)
+    parsed.parse()
 
-    if not p.requires_update:
+    if not parsed.requires_update:
         return
 
     filename = inspect.getfile(cls)
@@ -93,7 +93,7 @@ def update_file(filename):
 
     for c_name, c_value in explored.module.items():
         update_class(c_name)
-        for f_name, f_value in c_value.items():
+        for _, f_value in c_value.items():
             update_func(f_value)
 
     for f_name, f_value in explored.function.items():
@@ -117,7 +117,7 @@ class ExploredFile:
         self.filename = filename
         self.mod_name = filename.replace('/', '.').replace('\\', '.')[:-3]
 
-        logger.debug('Importing filename {0} from filename {1} with cwd: {2}'.format(self.mod_name, self.filename, os.getcwd()))
+        logger.debug('Importing filename %s from filename %s with cwd: %s' % (self.mod_name, self.filename, os.getcwd()))
         self.imported_module = importlib.import_module(self.mod_name)
 
         self.module = OrderedDict()
@@ -129,7 +129,7 @@ class ExploredFile:
 
         Returns: None
         """
-        for c_name, c_member in self.classes:
+        for _, c_member in self.classes:
             current = OrderedDict()
             Parsed(c_member).parse()
             for f_name, f_member in get_functions(c_member):
@@ -158,8 +158,9 @@ def explore_folder(foldername, recursive=True):
 
     logger.debug('Exploring folder {0} from folder {1}'.format(foldername, os.getcwd()))
     for load, name, is_pkg in pkgutil.walk_packages([foldername]):
-        # if not recursive and is_pkg:
-        #     continue
+        if not recursive and is_pkg:
+            continue
+
         if is_pkg:
             path = load.path + name + os.sep
             logger.debug(path)
@@ -171,7 +172,7 @@ def explore_folder(foldername, recursive=True):
             files_to_load.append(load.path + name + '.py')
 
     for f in files_to_load:
-        logger.info('File: {0}'.format(f))
+        logger.info('File: %s' % str(f))
         temp = ExploredFile(f)
         temp.explore()
         explored[f] = temp
