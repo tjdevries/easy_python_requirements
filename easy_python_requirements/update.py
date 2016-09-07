@@ -16,7 +16,7 @@ from easy_python_requirements.util import (
 )
 
 logging.basicConfig(stream=sys.stdout)
-logger = logging.getLogger()
+logger = logging.getLogger()  # noqa
 logger.setLevel(logging.INFO)
 
 
