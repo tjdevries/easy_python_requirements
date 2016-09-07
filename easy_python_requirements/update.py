@@ -96,7 +96,7 @@ def update_file(filename):
         for _, f_value in c_value.items():
             update_func(f_value)
 
-    for f_name, f_value in explored.function.items():
+    for _, f_value in explored.function.items():
         update_func(f_value)
 
 
@@ -117,7 +117,7 @@ class ExploredFile:
         self.filename = filename
         self.mod_name = filename.replace('/', '.').replace('\\', '.')[:-3]
 
-        logger.debug('Importing filename %s from filename %s with cwd: %s' % (self.mod_name, self.filename, os.getcwd()))
+        logger.debug('Importing filename %s from filename %s with cwd: %s', self.mod_name, self.filename, str(os.getcwd()))
         self.imported_module = importlib.import_module(self.mod_name)
 
         self.module = OrderedDict()
@@ -152,11 +152,11 @@ class ExploredFile:
         return get_classes(self.imported_module)
 
 
-def explore_folder(foldername, recursive=True):
+def explore_folder(foldername: str, recursive=True):
     files_to_load = []
     explored = OrderedDict()
 
-    logger.debug('Exploring folder {0} from folder {1}'.format(foldername, os.getcwd()))
+    logger.debug('Exploring folder %s from folder %s', foldername, str(os.getcwd()))
     for load, name, is_pkg in pkgutil.walk_packages([foldername]):
         if not recursive and is_pkg:
             continue
@@ -171,11 +171,11 @@ def explore_folder(foldername, recursive=True):
         else:
             files_to_load.append(load.path + name + '.py')
 
-    for f in files_to_load:
-        logger.info('File: %s' % str(f))
-        temp = ExploredFile(f)
+    for current_file in files_to_load:
+        logger.info('File: %s', str(current_file))
+        temp = ExploredFile(current_file)
         temp.explore()
-        explored[f] = temp
+        explored[current_file] = temp
 
     # TODO: Get the order sorted by files, then directories
     explored = OrderedDict(sorted(explored.items(), key=lambda x: get_depth_of_file(x[0])))
