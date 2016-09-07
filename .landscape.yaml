@@ -1,3 +1,4 @@
+strictness: veryhigh
 doc-warnings: false
 test-warnings: false
 max-line-length: 140
@@ -7,3 +8,6 @@ ignore-paths:
     - mock_functions
 python-targets:
     - 3
+pyroma:
+    run: true
+
